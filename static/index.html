@@ -6,34 +6,33 @@
             margin: 0; padding: 0;
          }
 
-         img {
-            image-rendering: optimizeSpeed;             /* STOP SMOOTHING, GIVE ME SPEED  */
-            image-rendering: -moz-crisp-edges;          /* Firefox                        */
-            image-rendering: -o-crisp-edges;            /* Opera                          */
-            image-rendering: -webkit-optimize-contrast; /* Chrome (and eventually Safari) */
-            image-rendering: crisp-edges;
-            image-rendering: pixelated; /* Chrome */
-            image-rendering: optimize-contrast;         /* CSS3 Proposed                  */
-            -ms-interpolation-mode: nearest-neighbor;   /* IE8+                           */
-         }
-
          button {
             background: transparent;
             border: none;
             font-size: inherit;
          }
 
+         /*
+         canvas {
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+         }
+         */
+
       </style>
       <script src="/static/index.js"></script>
    </head>
    <body>
       <div id="navMenu" style="position: absolute; top: 0; left: 0; width: 100%; display: none; z-index: 9999999999999; font-size: 4em; line-height: 2em; background: white;">
+         <div><button onclick="navigateTo('https://www.youtube.com')">YouTube</button></div>
          <div><button onclick="navigateTo('https://www.theguardian.com/au')">Guardian Australia</button></div>
          <div><button onclick="navigateTo('https://news.abc.net.au')">ABC News Online</button></div>
          <div><button onclick="navigateTo('https://news.bbc.co.uk')">BBC News Online</button></div>
          <div><button onclick="navigateTo('https://www.aljazeera.com/')">Al Jazeera English</button></div>
          <div><button onclick="navigateTo('https://www.theage.com.au/')">The Age</button></div>
          <div><button onclick="navigateTo('https://www.google.com.au')">Google</button></div>
+         <div><button onclick="navigateTo('https://en.m.wikipedia.org')">English Wikipedia</button></div>
+         <div><button onclick="navigateTo('https://www.ltn.com.tw/')">Freedom Times</button></div>
          <div><button onclick="navigateTo('https://read.readmoo.com/')">ReadMoo</button></div>
       </div>
       <div style="position: absolute; bottom: 20px; left: 0; text-align: justify; z-index: 9999999999999; border-top: 10px solid gray">
@@ -48,7 +47,7 @@
       </div>
       <div id="topEl" style="width: 100%; height: 100%; position: relative; z-index: -1; top:0; left:0">
          <div id="messageDiv" style="position: absolute; bottom: 300px; left: 0">INITIAL MESSAGE</div>
-         <!--<canvas id="chromiumCanvas" width="1215" height="1428"></canvas>-->
+         <canvas id="chromiumCanvas" width="1236" height="1400"></canvas>
       </div>
    </embed>
    </body>

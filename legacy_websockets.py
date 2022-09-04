@@ -55,7 +55,11 @@ class WebSocket(Protocol):
     def loop(self):
         if not queue.empty():
             i_data = queue.get()
-            self.send_data(json.dumps(i_data, ensure_ascii=True).encode('ascii'))
+            try:
+                self.send_data(json.dumps(i_data, ensure_ascii=True).encode('ascii'))
+            except KeyError:
+                queue.put(i_data)
+                raise
         reactor.callLater(0, self.loop)
 
     def connectionLost(self, reason):
@@ -85,7 +89,7 @@ class WebSocket(Protocol):
         return base64.b64encode(ser_key)
 
     def send_data(self, raw_str):
-        #print("sending:", raw_str)
+        print("sending:", self)
         
         if self.sockets[self]['new_version']:
             back_str = []

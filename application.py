@@ -28,13 +28,20 @@ async def websocket_handler(request):
     ws = aiohttp.web.WebSocketResponse()
     await ws.prepare(request)
     print('Websocket connection ready')
+    i_data = None
     try:
         while True:
             #data = await websocket.receive()
             #if data['type'] == 'websocket.disconnect':
             #    break
             i_data = to_client_queue.get()
-            await ws.send_str(json.dumps(i_data))
+            await ws.send_str(json.dumps(i_data,
+                                         ensure_ascii=False,
+                                         separators=(',', ':')))
+    except KeyError:
+        if i_data is not None:
+            to_client_queue.put(i_data)
+        return
     except Exception as ex:
         return ex
 
@@ -219,13 +226,18 @@ def run_browser():
             "disable-web-security":""
         })
 
-    width = 1236
-    height = 1648 - 220
+    if False:
+        width = 650
+        height = 750
+    else:
+        width = 1236
+        height = 1648 - 220
+
     windowInfo = cefpython.WindowInfo()
     windowInfo.SetAsOffscreen(0)
 
     browserSettings = {
-        'windowless_frame_rate': 3,
+        'windowless_frame_rate': 2,
         "web_security_disabled": True,
         "file_access_from_file_urls_allowed": "",
         "universal_access_from_file_urls_allowed": "",

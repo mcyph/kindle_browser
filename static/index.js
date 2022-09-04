@@ -7,11 +7,17 @@ const startListener = function() {
         return;
     }
     active = true;
+    var jobId = 0;
     
     var messageDiv = document.getElementById('messageDiv');
     var topEl = document.getElementById('topEl');
     var inputDummy = document.getElementById('input_dummy');
+    var chromiumCanvas = document.getElementById('chromiumCanvas');
     var wsConn = new WebSocket('ws://' + window.location.hostname + ":8080/ws");
+
+    var ctx = chromiumCanvas.getContext('2d');
+
+    //ctx.imageSmoothingEnabled = false;
 
     function sendJSON(obj) {
         wsConn.send(JSON.stringify(obj));
@@ -80,7 +86,7 @@ const startListener = function() {
     };
 
     wsConn.onopen = function() {
-        setMessage("Active");
+        setMessage("");
         wsConn.send('firstData!');
     }
     wsConn.onclose = function(e) {
@@ -91,43 +97,101 @@ const startListener = function() {
         setMessage("ERROR " + code + e);
     }
 
-    var images = [];
-    var zIndex = 0
-    wsConn.onmessage = function(message) {
-        try {
-            var image = new Image();
-            var data = JSON.parse(message.data);
+    var SCREEN_WIDTH = 1236*3; // NOTE ME!
+    //var SCREEN_WIDTH = 800*3;
+    var TIMES_BY = 2;
+    var NUM_SCANLINES = 1;
 
-            var imagesOut = [];
-            for (var i=0; i<images.length; i++) {
-                const otherImage = images[i];
+    var darknessTypes = {
+        0: '#000000',
+        1: '#545454',
+        2: '#FFFFFF',
+    };
+    var darknessNums = {
+        0: 0,
+        1: 128,
+        2: 255,
+    };
+    var lineData = {
+        0: ctx.createImageData(SCREEN_WIDTH, TIMES_BY*10),
+        1: ctx.createImageData(SCREEN_WIDTH, TIMES_BY*10),
+        2: ctx.createImageData(SCREEN_WIDTH, TIMES_BY*10),
+    };
 
-                if (data.left <= otherImage.left && 
-                    data.top <= otherImage.top &&
-                    (data.left+data.width) >= (otherImage.left+otherImage.width) &&
-                    (data.top+data.height) >= (otherImage.top+otherImage.height)) {
-                        otherImage.el.parentNode.removeChild(otherImage.el);
+    for (var x=0; x<(SCREEN_WIDTH*TIMES_BY*10*4); x+=4) {
+        for (var y=0; y<3; y++) {
+            for (var z=0; z<4; z++) {
+                if (z === 3) {
+                    lineData[y].data[x + z] = 255;
                 } else {
-                    imagesOut.push(otherImage);
+                    lineData[y].data[x + z] = darknessNums[y];
                 }
             }
-            images = imagesOut;
-            image.src = "data:image/png;base64,"+data.imageData;
-            image.style.top = data.top+'px';
-            image.style.left = data.left+'px';
-            image.style.position = 'absolute';
-            image.style.zIndex = zIndex++;
-            document.body.insertBefore(image, document.body.firstChild);
-            images.push({
-                el: image,
-                top: data.top,
-                left: data.left,
-                width: data.width,
-                height: data.height,
-            });
-        } catch(e) {
-            setMessage("MSG ERROR");
         }
+    }
+
+    wsConn.onmessage = function(message) {
+        var data = JSON.parse(message.data);
+        var rleData = data.imageData;
+        var _jobId = ++jobId;
+        var timeJobStarted = new Date().getTime() / 1000;
+
+        function runMe(y) {
+            var timeNow = new Date().getTime() / 1000;
+            if (timeNow-timeJobStarted > 2) {
+                // Don't stall if taken too long to render
+                return;
+            }
+
+            //if (_jobId !== jobId) {
+            //    return;
+            //}
+            var initialY = y;
+            try {
+
+                for (; y<rleData.length; y+= NUM_SCANLINES) {
+                    var currentX = 0;
+                    ctx.beginPath();
+
+                    for (var x=0; x<rleData[y].length; x += 2) {
+                        var darkness = rleData[y][x],
+                            howLongFor = rleData[y][x+1];
+
+                        /*ctx.beginPath();
+                        ctx.fillStyle = darknessTypes[darkness];
+                        ctx.fillRect(
+                            parseInt(data.left+(currentX*TIMES_BY)), parseInt(data.top + initialY + y*TIMES_BY),
+                            howLongFor*TIMES_BY, TIMES_BY
+                        );
+                        ctx.closePath();*/
+
+                        ctx.putImageData(
+                            lineData[darkness],
+                            Math.round(data.left*1.8+currentX*1.8), // *TIMES_BY
+                            Math.round((data.top*1.8)+(y*TIMES_BY*1.8)),
+                            0, 0,
+                            Math.round(howLongFor*1.8), // TIMES_BY*
+                            Math.round(TIMES_BY*1.8)
+                        );
+                        currentX += howLongFor;
+                    }
+
+                    ctx.closePath();
+                }
+
+
+                if (initialY < NUM_SCANLINES-1) {
+                    setTimeout(function () {
+                        runMe(initialY + 1);
+                    }, 0);
+                }
+            } catch(e) {
+                setMessage("MSG ERROR: "+e);
+            }
+        }
+        setTimeout(function () {
+            runMe(0);
+        }, 0);
     }
 }
 
