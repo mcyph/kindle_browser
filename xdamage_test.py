@@ -93,15 +93,20 @@ def main(to_client_queue, pid):
             from process_image_for_output import process_image_for_output
             import legacy_websockets
 
-            legacy_websockets.background.paste(image, (event.area.x, event.area.y))
+            from ScreenStateContext import ScreenStateContext
+            ScreenStateContext.paste(image, event.area.x, event.area.y)
 
-            to_client_queue.put({
-                'imageData': process_image_for_output(image),
-                'left': event.area.x,
-                'top': event.area.y,
-                'width': event.area.width,
-                'height': event.area.height,
-            })
+            if ScreenStateContext.ready_for_send:
+                to_client_queue.put({
+                    'imageData': process_image_for_output(image),
+                    'left': event.area.x,
+                    'top': event.area.y,
+                    'width': event.area.width,
+                    'height': event.area.height,
+                })
+                ScreenStateContext.reset_dirty_rect()
+                ScreenStateContext.ready_for_send = False
+
         elif event.type == X.DestroyNotify:
             sys.exit(0)
 

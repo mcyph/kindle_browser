@@ -60,16 +60,17 @@ def monitor_client_queue():
             #    system(f"DISPLAY=:2 xdotool mouseup")
             elif command['type'] == 'command':
                 if command['command'] == 'keyevent':
-                    modifiers = []
-                    if command['shiftKey']:
-                        modifiers.append('shift')
-                    if command['altKey']:
-                        modifiers.append('shift')
-                    if command['ctrlKey']:
-                        modifiers.append('shift')
+                    if command['keyEventType'] == 'keypress':
+                        modifiers = []
+                        if command['shiftKey']:
+                            modifiers.append('shift')
+                        if command['altKey']:
+                            modifiers.append('alt')
+                        if command['ctrlKey']:
+                            modifiers.append('ctrl')
 
-                    modifiers.append(chr(command['keyCode']))  # charCode??
-                    system(f"DISPLAY=:2 xdotool key {'+'.join(modifiers)}")
+                        modifiers.append(chr(command['keyCode']))  # charCode??
+                        system(f"DISPLAY=:2 xdotool key {'+'.join(modifiers)}")
 
                 elif command['command'] == 'scroll_up':
                     print("scroll up")
@@ -89,6 +90,38 @@ def monitor_client_queue():
                     # browser.ExecuteJavascript('location.href = %s' % json.dumps(command['url']))
                     # browser.LoadUrl(command['url'])
                     pass
+
+                elif command['command'] == 'initialFrame':
+                    from ScreenStateContext import ScreenStateContext
+                    from process_image_for_output import process_image_for_output
+
+                    to_client_queue.put({
+                        'imageData': process_image_for_output(ScreenStateContext.background),
+                        'left': 0,
+                        'top': 0,
+                        'width': ScreenStateContext.screen_x,
+                        'height': ScreenStateContext.screen_y,
+                    })
+                    ScreenStateContext.reset_dirty_rect()
+                    ScreenStateContext.ready_for_send = False
+
+                elif command['command'] == 'readyForMore':
+                    from ScreenStateContext import ScreenStateContext
+                    from process_image_for_output import process_image_for_output
+                    print('ready for more sent:', ScreenStateContext.dirty_rect)
+
+                    if ScreenStateContext.dirty_rect:
+                        to_client_queue.put({
+                            'imageData': process_image_for_output(ScreenStateContext.background.crop(ScreenStateContext.dirty_rect)),
+                            'left': ScreenStateContext.dirty_rect[0],
+                            'top': ScreenStateContext.dirty_rect[1],
+                            'width': ScreenStateContext.dirty_rect[2] - ScreenStateContext.dirty_rect[0],
+                            'height': ScreenStateContext.dirty_rect[3] - ScreenStateContext.dirty_rect[1],
+                        })
+                        ScreenStateContext.reset_dirty_rect()
+                        ScreenStateContext.ready_for_send = False
+                    else:
+                        ScreenStateContext.ready_for_send = True
                 else:
                     raise Exception(command)
             # else:

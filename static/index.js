@@ -92,6 +92,7 @@ const startListener = function() {
     wsConn.onopen = function() {
         setMessage("");
         wsConn.send('firstData!');
+        sendJSON({ type: 'command', command: 'initialFrame' });
     }
     wsConn.onclose = function(e) {
         setMessage("Disconn. " + JSON.stringify(e));
@@ -173,7 +174,7 @@ const startListener = function() {
                         Math.round(((data.top)+y) * TIMES_BY),
                         0, 0,
                         Math.round(howLongFor * TIMES_BY), // TIMES_BY*
-                        1 //Math.round(TIMES_BY)
+                        2 //Math.round(TIMES_BY)
                     );
                     currentX += howLongFor;
                 }

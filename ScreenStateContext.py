@@ -7,6 +7,7 @@ class _ScreenStateContext:
         self.screen_y = screen_y
         self.background = Image.new("L", (screen_x, screen_y), (255,))
         self.reset_dirty_rect()
+        self.ready_for_send = False
 
     def reset_dirty_rect(self):
         self.dirty_rect = None
