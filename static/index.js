@@ -2,6 +2,18 @@
 
 var active = false;
 
+var IGNORE_ABOVE = 1300;
+var SCREEN_WIDTH = 1200; // NOTE ME!
+//var SCREEN_WIDTH = 800*3;
+
+if (true) {
+    var TIMES_BY = 2.9;
+    var TIMES_EVENTS_BY = 0.6;
+} else {
+    var TIMES_BY = 1.55;
+    var TIMES_EVENTS_BY = 0.65;
+}
+
 const startListener = function() {
     if (active)	{
         return;
@@ -21,8 +33,8 @@ const startListener = function() {
 
     function sendJSON(obj) {
         if ('left' in obj) {
-            obj['left'] *= 0.65;
-            obj['top'] *= 0.65;
+            obj['left'] *= TIMES_EVENTS_BY;
+            obj['top'] *= TIMES_EVENTS_BY;
         }
         wsConn.send(JSON.stringify(obj));
     }
@@ -61,7 +73,6 @@ const startListener = function() {
         toggleNavMenu();
     }
 
-    const IGNORE_ABOVE = 1300;
     document.addEventListener('mousemove', function(e) {
         if (e.pageY < IGNORE_ABOVE)
             sendJSON({ type: 'mouseMove', left: e.pageX, top: e.pageY });
@@ -102,11 +113,6 @@ const startListener = function() {
         setMessage("ERROR " + code + e);
     }
 
-    var SCREEN_WIDTH = 1200; // NOTE ME!
-    //var SCREEN_WIDTH = 800*3;
-    var TIMES_BY = 1.55;
-    var NUM_SCANLINES = 1;
-
     var darknessTypes = {
         0: '#000000',
         1: '#545454',
@@ -135,7 +141,13 @@ const startListener = function() {
         }
     }
 
+    var offset = 0;
+
     wsConn.onmessage = function(message) {
+        /*offset++;
+        if (offset === 3) {
+            offset = 0;
+        }*/
         var data = JSON.parse(message.data);
         var rleData = data.imageData;
         var timeJobStarted = new Date().getTime() / 1000;
@@ -171,10 +183,10 @@ const startListener = function() {
                     ctx.putImageData(
                         lineData[darkness],
                         Math.round((data.left+currentX) * TIMES_BY),
-                        Math.round(((data.top)+y) * TIMES_BY),
+                        Math.round(((data.top)+y) * TIMES_BY) + offset,
                         0, 0,
                         Math.round(howLongFor * TIMES_BY), // TIMES_BY*
-                        2 //Math.round(TIMES_BY)
+                        3 //Math.round(TIMES_BY)
                     );
                     currentX += howLongFor;
                 }

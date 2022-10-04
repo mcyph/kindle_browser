@@ -40,17 +40,7 @@ class WebSocket(Protocol):
                     from_client_queue.put(command)
                 else:
                     print("CALLING FIRST TIME LOOP", i_msg)
-                    reactor.callLater(0, self.send_first_time_data)
-    
-    def send_first_time_data(self):
-        self.send_data(json.dumps({
-            'imageData': process_image_for_output(background),
-            'left': 0, 
-            'top': 0,
-            'width': 4000, 
-            'height': 4000,
-        }, ensure_ascii=True).encode('ascii'))
-        reactor.callLater(0, self.loop)
+                    reactor.callLater(0, self.loop)
     
     def loop(self):
         if not queue.empty():

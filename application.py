@@ -60,7 +60,7 @@ def monitor_client_queue():
             #    system(f"DISPLAY=:2 xdotool mouseup")
             elif command['type'] == 'command':
                 if command['command'] == 'keyevent':
-                    if command['keyEventType'] == 'keypress':
+                    if command['keyEventType'] == 'keyup':
                         modifiers = []
                         if command['shiftKey']:
                             modifiers.append('shift')
