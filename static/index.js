@@ -20,6 +20,10 @@ const startListener = function() {
     //ctx.imageSmoothingEnabled = false;
 
     function sendJSON(obj) {
+        if ('left' in obj) {
+            obj['left'] *= 0.65;
+            obj['top'] *= 0.65;
+        }
         wsConn.send(JSON.stringify(obj));
     }
 
@@ -97,9 +101,9 @@ const startListener = function() {
         setMessage("ERROR " + code + e);
     }
 
-    var SCREEN_WIDTH = 1236*3; // NOTE ME!
+    var SCREEN_WIDTH = 1200; // NOTE ME!
     //var SCREEN_WIDTH = 800*3;
-    var TIMES_BY = 2;
+    var TIMES_BY = 1.55;
     var NUM_SCANLINES = 1;
 
     var darknessTypes = {
@@ -133,64 +137,54 @@ const startListener = function() {
     wsConn.onmessage = function(message) {
         var data = JSON.parse(message.data);
         var rleData = data.imageData;
-        var _jobId = ++jobId;
         var timeJobStarted = new Date().getTime() / 1000;
 
-        function runMe(y) {
-            var timeNow = new Date().getTime() / 1000;
-            if (timeNow-timeJobStarted > 2) {
-                // Don't stall if taken too long to render
-                return;
-            }
-
-            //if (_jobId !== jobId) {
-            //    return;
-            //}
-            var initialY = y;
-            try {
-
-                for (; y<rleData.length; y+= NUM_SCANLINES) {
-                    var currentX = 0;
-                    ctx.beginPath();
-
-                    for (var x=0; x<rleData[y].length; x += 2) {
-                        var darkness = rleData[y][x],
-                            howLongFor = rleData[y][x+1];
-
-                        /*ctx.beginPath();
-                        ctx.fillStyle = darknessTypes[darkness];
-                        ctx.fillRect(
-                            parseInt(data.left+(currentX*TIMES_BY)), parseInt(data.top + initialY + y*TIMES_BY),
-                            howLongFor*TIMES_BY, TIMES_BY
-                        );
-                        ctx.closePath();*/
-
-                        ctx.putImageData(
-                            lineData[darkness],
-                            Math.round(data.left*1.8+currentX*1.8), // *TIMES_BY
-                            Math.round((data.top*1.8)+(y*TIMES_BY*1.8)),
-                            0, 0,
-                            Math.round(howLongFor*1.8), // TIMES_BY*
-                            Math.round(TIMES_BY*1.8)
-                        );
-                        currentX += howLongFor;
-                    }
-
-                    ctx.closePath();
-                }
-
-
-                if (initialY < NUM_SCANLINES-1) {
-                    setTimeout(function () {
-                        runMe(initialY + 1);
-                    }, 0);
-                }
-            } catch(e) {
-                setMessage("MSG ERROR: "+e);
-            }
+        var timeNow = new Date().getTime() / 1000;
+        if (timeNow-timeJobStarted > 2) {
+            // Don't stall if taken too long to render
+            return;
         }
-        setTimeout(function () {
-            runMe(0);
+
+        //if (_jobId !== jobId) {
+        //    return;
+        //}
+        var y;
+
+        try {
+            for (y=0; y<rleData.length; y++) {
+                var currentX = 0;
+                ctx.beginPath();
+
+                for (var x=0; x<rleData[y].length; x += 2) {
+                    var darkness = rleData[y][x],
+                        howLongFor = rleData[y][x+1];
+
+                    /*ctx.beginPath();
+                    ctx.fillStyle = darknessTypes[darkness];
+                    ctx.fillRect(
+                        parseInt(data.left+(currentX*TIMES_BY)), parseInt(data.top + initialY + y*TIMES_BY),
+                        howLongFor*TIMES_BY, TIMES_BY
+                    );
+                    ctx.closePath();*/
+
+                    ctx.putImageData(
+                        lineData[darkness],
+                        Math.round((data.left+currentX) * TIMES_BY),
+                        Math.round(((data.top)+y) * TIMES_BY),
+                        0, 0,
+                        Math.round(howLongFor * TIMES_BY), // TIMES_BY*
+                        1 //Math.round(TIMES_BY)
+                    );
+                    currentX += howLongFor;
+                }
+
+                ctx.closePath();
+            }
+        } catch(e) {
+            setMessage("MSG ERROR: "+e);
+        }
+        setTimeout(function() {
+            sendJSON({ type: 'command', command: 'readyForMore' });
         }, 0);
     }
 }

@@ -1,8 +1,8 @@
 pillow
 fastapi
 uvicorn[standard]
-cefpython3
 websockets
 aiohttp[speedups]
 
 twisted
+python-xlib

@@ -1,15 +1,11 @@
-import io
 import json
-import base64
+import time
 import threading
 import aiohttp.web
-from PIL import Image
+from os import system
 from queue import Queue
-from cefpython3 import cefpython
 
-import legacy_websockets
 from legacy_websockets import main as wsmain
-from process_image_for_output import process_image_for_output
 
 
 HOST = '0.0.0.0'
@@ -46,218 +42,94 @@ async def websocket_handler(request):
         return ex
 
 
-class ClientHandler:
-    """A client handler is required for the browser to do built in callbacks back into the application."""
-    browser = None
-    image = None
-    width = None
-    height = None
-    screenshot_fpath = None
+def monitor_client_queue():
+    while True:
+        command = from_client_queue.get()
+        if command['type'] not in ('command', 'keyevent'):
+            x = command['left']
+            y = command['top']
 
-    def __init__(self, browser, width, height, screenshot_fpath):
-        self.browser = browser
-        self.width = width
-        self.height = height
-        self.screenshot_fpath = screenshot_fpath
-        
-        def monitor_client_queue():
-            while True:
-                command = from_client_queue.get()
-                if command['type'] not in ('command', 'keyevent'):
-                    x = command['left']
-                    y = command['top']
-                
-                try:
-                    if command['type'] == 'mouseMove':
-                        browser.SendMouseMoveEvent(x, y, False, cefpython.EVENTFLAG_NONE)
-                        self.mouse_down = True
-                    elif command['type'] == 'mouseDown':
-                        browser.SendMouseMoveEvent(x, y, False, cefpython.EVENTFLAG_NONE)
-                        self.mouse_down = True
-                    elif command['type'] in ('mouseUp', 'click') and self.mouse_down:
-                        browser.SendMouseMoveEvent(x, y, False, cefpython.EVENTFLAG_LEFT_MOUSE_BUTTON)
-                        browser.SendMouseClickEvent(x, y, cefpython.MOUSEBUTTON_LEFT, False, 1, cefpython.EVENTFLAG_LEFT_MOUSE_BUTTON)
-                        browser.SendMouseClickEvent(x, y, cefpython.MOUSEBUTTON_LEFT, True, 1, cefpython.EVENTFLAG_LEFT_MOUSE_BUTTON)
-                        self.mouse_down = False
-                    elif command['type'] == 'command':
-                        if command['command'] == 'keyevent':
-                            modifiers = 0
-                            if command['shiftKey']:
-                                modifiers |= cefpython.EVENTFLAG_SHIFT_DOWN
-                            if command['altKey']:
-                                modifiers |= cefpython.EVENTFLAG_ALT_DOWN
-                            if command['ctrlKey']:
-                                modifiers |= cefpython.EVENTFLAG_CTRL_DOWN
-                            
-                            browser.SendKeyEvent({
-                                'type': {
-                                    'keydown': cefpython.KEYEVENT_KEYDOWN,
-                                    'keyup': cefpython.KEYEVENT_KEYUP,
-                                    'keypress': cefpython.KEYEVENT_CHAR,
-                                }[command['keyEventType']],
-                                'modifiers': modifiers,
-                                'windows_key_code': command['keyCode'],
-                                'native_key_code': command['keyCode'],
-                                'character': command['charCode'],
-                                'focus_on_editable_field': False
-                            })
-                        elif command['command'] == 'scroll_up':
-                            print("scroll up")
-                            browser.ExecuteJavascript('document.documentElement.scrollTop -= 550')
-                        elif command['command'] == 'scroll_down':
-                            print("scroll down")
-                            browser.ExecuteJavascript('document.documentElement.scrollTop += 550')
-                        elif command['command'] == 'forward':
-                            browser.GoForward()
-                        elif command['command'] == 'back':
-                            browser.GoBack()
-                        elif command['command'] == 'refresh':
-                            browser.Reload()
-                        elif command['command'] == 'top':
-                            browser.ExecuteJavascript('document.documentElement.scrollTop = 0')
-                        elif command['command'] == 'navigate':
-                            browser.ExecuteJavascript('location.href = %s' % json.dumps(command['url']))
-                            #browser.LoadUrl(command['url'])
-                        else:
-                            raise Exception(command)
-                    #else:
-                    #    raise Exception(command)
-                except:
-                    import traceback
-                    traceback.print_exc()
+        try:
+            if command['type'] == 'mouseMove':
+                system(f"DISPLAY=:2 xdotool mousemove {x} {y}")
+            elif command['type'] == 'mouseDown':
+                system(f"DISPLAY=:2 xdotool mousemove {x} {y}")
+                system(f"DISPLAY=:2 xdotool click 1")
+            # elif command['type'] in ('mouseUp', 'click') and self.mouse_down:
+            #    system(f"DISPLAY=:2 xdotool mousemove {x} {y}")
+            #    system(f"DISPLAY=:2 xdotool mouseup")
+            elif command['type'] == 'command':
+                if command['command'] == 'keyevent':
+                    modifiers = []
+                    if command['shiftKey']:
+                        modifiers.append('shift')
+                    if command['altKey']:
+                        modifiers.append('shift')
+                    if command['ctrlKey']:
+                        modifiers.append('shift')
 
-        thread = threading.Thread(target=monitor_client_queue, args=())
-        thread.start()
-    
-    def OnLoadingStateChange(self, browser, is_loading, **_):
-        if is_loading:
-            print("Page loading complete - start visiting cookies")
-            manager = cefpython.CookieManager.GetGlobalManager()
-            # Must keep a strong reference to the CookieVisitor object
-            # while cookies are being visited.
-            self.cookie_visitor = CookieVisitor()
-            # Visit all cookies
-            result = manager.VisitAllCookies(self.cookie_visitor)
-            if not result:
-                print("Error: could not access cookies")
-        
-    def OnLoadingProgressChange(self, browser, progress):
-        if round(browser.GetZoomLevel()) != 4:
-            browser.SetZoomLevel(4.0)
+                    modifiers.append(chr(command['keyCode']))  # charCode??
+                    system(f"DISPLAY=:2 xdotool key {'+'.join(modifiers)}")
 
-    def OnPaint(self, browser, element_type, dirty_rects, paint_buffer, width, height):
-        if element_type == cefpython.PET_POPUP:
-            print("width=%s, height=%s" % (width, height))
-        elif element_type == cefpython.PET_VIEW:
-            self.image = paint_buffer.GetString(mode="rgba", origin="top-left")
-            image = Image.frombytes("RGBA", (width, height), self.image, "raw", "RGBA", 0, 1)
-            background = Image.new("L", image.size, (255,))
-            background.paste(image, mask=image.split()[3]) # 3 is the alpha channel
-            legacy_websockets.background = background
-            
-            for dirty_rect in dirty_rects:
-                # list[[x,y,width,height],[..]]
-                cropped_background = background.crop((dirty_rect[0], dirty_rect[1], 
-                                                      dirty_rect[0]+dirty_rect[2], dirty_rect[1]+dirty_rect[3]))
-                to_client_queue.put({
-                    'imageData': process_image_for_output(cropped_background),
-                    'left': dirty_rect[0], 
-                    'top': dirty_rect[1],
-                    'width': dirty_rect[2], 
-                    'height': dirty_rect[3],
-                })
-        else:
-            raise Exception("Unknown paintElementType: %s" % element_type)
-
-    def GetViewRect(self, browser, rect_out):
-        width = self.width
-        height = self.height
-        rect_out.append(0)
-        rect_out.append(0)
-        rect_out.append(width)
-        rect_out.append(height)
-        return True
-
-    def GetScreenPoint(self, browser, view_x, view_y, screen_coordinates_out):
-        print("GetScreenPoint()")
-        return False
-
-    def OnLoadEnd(self, browser, frame, http_code):
-        #image.save(self.screenshot_fpath, "PNG")
-        #cefpython.QuitMessageLoop()
-        pass
-
-    def OnLoadError(self, browser, frame, error_code, error_text_out, failed_url):
-        print("load error", browser, frame, error_code, error_text_out, failed_url)
+                elif command['command'] == 'scroll_up':
+                    print("scroll up")
+                    system(f"DISPLAY=:2 xdotool key Page_Up")
+                elif command['command'] == 'scroll_down':
+                    print("scroll down")
+                    system(f"DISPLAY=:2 xdotool key Page_Down")
+                elif command['command'] == 'forward':
+                    system(f"DISPLAY=:2 xdotool key alt+Right")
+                elif command['command'] == 'back':
+                    system(f"DISPLAY=:2 xdotool key alt+Left")
+                elif command['command'] == 'refresh':
+                    system(f"DISPLAY=:2 xdotool key F5")
+                elif command['command'] == 'top':
+                    system(f"DISPLAY=:2 xdotool key Home")
+                elif command['command'] == 'navigate':
+                    # browser.ExecuteJavascript('location.href = %s' % json.dumps(command['url']))
+                    # browser.LoadUrl(command['url'])
+                    pass
+                else:
+                    raise Exception(command)
+            # else:
+            #    raise Exception(command)
+        except:
+            import traceback
+            traceback.print_exc()
 
 
-def run_browser():
-    cefpython.g_debug = False
-    cefpython.Initialize(
-        {
-            "log_severity": cefpython.LOGSEVERITY_INFO, # LOGSEVERITY_VERBOSE
-            #"log_file": GetApplicationPath("debug.log"), # Set to "" to disable.
-            "release_dcheck_enabled": False, # Enable only when debugging.
-            # This directories must be set on Linux
-            "locales_dir_path": cefpython.GetModuleDirectory()+"/locales",
-            "resources_dir_path": cefpython.GetModuleDirectory(),
-            "multi_threaded_message_loop": False,
-            "browser_subprocess_path": "%s/%s" % (cefpython.GetModuleDirectory(), "subprocess"),
-            #"auto_zooming": "2.0",
-            "cache_path": "./browser_cache",
-        }, 
-        switches={
-            # https://pastebin.com/JUrqiMqW
-            
-            #'disable-features': 'TouchpadAndWheelScrollLatching,AsyncWheelEvents', 
-            'enable-media-stream': '',
-            "disable-threaded-scrolling":'',
-            'disable-touch-adjustment':'',#TouchpadAndWheelScrollLatching':'',
-            "disable-smooth-scrolling":"",
-            "disable-AsyncWheelEvents":'',
-            # GPU acceleration is not supported in OSR mode, so must disable
-            # it using these Chromium switches (Issue #240 and #463)
-            "disable-gpu": "",
-            "disable-gpu-compositing": "",
-            # Tweaking OSR performance by setting the same Chromium flags
-            # as in upstream cefclient (Issue #240).
-            "enable-begin-frame-scheduling": "",
-            #"disable-surfaces": "",  # This is required for PDF ext to work
-            "disable-web-security":""
-        })
+VIEWPORT_HEIGHT = 800
+VIEWPORT_WIDTH = 750
 
-    if False:
-        width = 650
-        height = 750
-    else:
-        width = 1236
-        height = 1648 - 220
-
-    windowInfo = cefpython.WindowInfo()
-    windowInfo.SetAsOffscreen(0)
-
-    browserSettings = {
-        'windowless_frame_rate': 2,
-        "web_security_disabled": True,
-        "file_access_from_file_urls_allowed": "",
-        "universal_access_from_file_urls_allowed": "",
-    }
-    browser = cefpython.CreateBrowserSync(windowInfo, browserSettings, navigateUrl="https://news.abc.net.au")
-    browser.SendFocusEvent(True)
-    
-    browser.SetClientHandler(ClientHandler(browser, width, height, "screenshot.png"))
-    browser.WasResized()
-    cefpython.MessageLoop()
-    cefpython.Shutdown()
-
-
-thread = threading.Thread(target=run_browser, args=())
-thread.start()
 thread = threading.Thread(target=wsmain, args=(to_client_queue, from_client_queue))
 thread.start()
 
 
 def main():
+    from PIL import Image
+    import subprocess
+    import legacy_websockets
+
+    proc = subprocess.Popen(['Xephyr', '-screen', f'{VIEWPORT_WIDTH}x{VIEWPORT_HEIGHT}', ':2'], shell=False)
+    pid = proc.pid
+
+    thread = threading.Thread(target=monitor_client_queue, args=())
+    thread.start()
+
+    time.sleep(4)
+
+    background = Image.new("L", (VIEWPORT_WIDTH, VIEWPORT_HEIGHT), (255,))
+    legacy_websockets.background = background
+
+    import xdamage_test
+    thread_2 = threading.Thread(target=xdamage_test.main, args=(to_client_queue, pid))
+    #xdamage_test.main(to_client_queue, pid)
+    thread_2.start()
+
+    #system("DISPLAY=:2 onboard &")
+    system(f"DISPLAY=:2 matchbox-window-manager &")
+    system(f"DISPLAY=:2 firefox -P Xephyr -width {VIEWPORT_WIDTH} -height {VIEWPORT_HEIGHT} &")
+
     #loop = asyncio.get_event_loop()
     app = aiohttp.web.Application()
     app.add_routes([aiohttp.web.static('/static', './static', show_index=True)])
@@ -266,23 +138,5 @@ def main():
     aiohttp.web.run_app(app, host=HOST, port=PORT)
 
 
-class CookieVisitor(object):
-    def Visit(self, cookie, count, total, delete_cookie_out):
-        """This callback is called on the IO thread."""
-        print("Cookie {count}/{total}: '{name}', '{value}'"
-              .format(count=count+1, total=total, name=cookie.GetName(),
-                      value=cookie.GetValue()))
-        # Set a cookie named "delete_me" and it will be deleted.
-        # You have to refresh page to see whether it succeeded.
-        if cookie.GetName() == "delete_me":
-            # 'delete_cookie_out' arg is a list passed by reference.
-            # Set its '0' index to True to delete the cookie.
-            delete_cookie_out[0] = True
-            print("Deleted cookie: {name}".format(name=cookie.GetName()))
-        # Return True to continue visiting more cookies
-        return True
-
-
 if __name__ == '__main__': 
     main()
-    

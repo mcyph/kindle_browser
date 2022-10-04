@@ -8,7 +8,8 @@ from PIL import Image, ImageEnhance, ImageOps
 
 def process_image_for_output(image: Image) -> str:
     print("Processing image for output...", end='')
-    image = image.resize((image.width, image.height // 2), resample=Image.Resampling.BILINEAR)
+    image = image.convert('L')
+    #image = image.resize((image.width, image.height), resample=Image.Resampling.BILINEAR)
 
     #enhancer = ImageEnhance.Contrast(image)
     #image = enhancer.enhance(4.0)
