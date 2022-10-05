@@ -45,6 +45,7 @@ import traceback
 
 
 def get_image_from_win(win, pt_w, pt_h, pt_x=0, pt_y=0):
+    #print(pt_w, pt_h, pt_x, pt_y)
     try:
         raw = win.get_image(pt_x, pt_y, pt_w, pt_h, X.ZPixmap, 0xffffffff)
         image = Image.frombytes("RGB", (pt_w, pt_h), raw.data, "raw", "BGRX")
@@ -79,8 +80,8 @@ def main(to_client_queue, pid):
     window1.damage_create(damage.DamageReportRawRectangles)
     window1.set_wm_normal_hints(
         flags=(Xutil.PPosition | Xutil.PSize | Xutil.PMinSize),
-        min_width=50,
-        min_height=50
+        min_width=10,
+        min_height=10
     )
 
     while 1:
@@ -89,23 +90,29 @@ def main(to_client_queue, pid):
             if event.count == 0:
                 pass
         elif event.type == d.extension_event.DamageNotify:
-            image = get_image_from_win(window1, event.area.width, event.area.height, event.area.x, event.area.y)
+            from ScreenStateContext import ScreenStateContext
+            get_area = event.area.width, event.area.height, event.area.x, event.area.y
+            #get_area = ScreenStateContext.screen_x, ScreenStateContext.screen_y, 0, 0
+
+            image = get_image_from_win(window1, *get_area)
             from process_image_for_output import process_image_for_output
             import legacy_websockets
 
-            from ScreenStateContext import ScreenStateContext
-            ScreenStateContext.paste(image, event.area.x, event.area.y)
+
+            with ScreenStateContext.lock:
+                ScreenStateContext.paste(image, event.area.x, event.area.y)
 
             if ScreenStateContext.ready_for_send:
-                to_client_queue.put({
-                    'imageData': process_image_for_output(image),
-                    'left': event.area.x,
-                    'top': event.area.y,
-                    'width': event.area.width,
-                    'height': event.area.height,
-                })
-                ScreenStateContext.reset_dirty_rect()
-                ScreenStateContext.ready_for_send = False
+                with ScreenStateContext.lock:
+                    to_client_queue.put({
+                        'imageData': process_image_for_output(image),
+                        'left': get_area[2],
+                        'top': get_area[3],
+                        'width': get_area[0],
+                        'height': get_area[1],
+                    })
+                    ScreenStateContext.reset_dirty_rect()
+                    ScreenStateContext.ready_for_send = False
 
         elif event.type == X.DestroyNotify:
             sys.exit(0)

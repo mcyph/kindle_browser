@@ -1,4 +1,5 @@
 from PIL import Image
+import _thread
 
 
 class _ScreenStateContext:
@@ -8,6 +9,7 @@ class _ScreenStateContext:
         self.background = Image.new("L", (screen_x, screen_y), (255,))
         self.reset_dirty_rect()
         self.ready_for_send = False
+        self.lock = _thread.allocate_lock()
 
     def reset_dirty_rect(self):
         self.dirty_rect = None
@@ -30,4 +32,4 @@ class _ScreenStateContext:
         self.add_to_dirty_rect(x, y, x+image.width, y+image.height)
 
 
-ScreenStateContext = _ScreenStateContext(800, 750)
+ScreenStateContext = _ScreenStateContext(750, 800)

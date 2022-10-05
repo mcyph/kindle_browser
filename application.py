@@ -60,7 +60,7 @@ def monitor_client_queue():
             #    system(f"DISPLAY=:2 xdotool mouseup")
             elif command['type'] == 'command':
                 if command['command'] == 'keyevent':
-                    if command['keyEventType'] == 'keyup':
+                    if command['keyEventType'] == 'keydown':
                         modifiers = []
                         if command['shiftKey']:
                             modifiers.append('shift')
@@ -69,7 +69,7 @@ def monitor_client_queue():
                         if command['ctrlKey']:
                             modifiers.append('ctrl')
 
-                        modifiers.append(chr(command['keyCode']))  # charCode??
+                        modifiers.append(chr(command['keyCode']).upper() if command['shiftKey'] else chr(command['keyCode']).lower())  # charCode??
                         system(f"DISPLAY=:2 xdotool key {'+'.join(modifiers)}")
 
                 elif command['command'] == 'scroll_up':
@@ -95,15 +95,16 @@ def monitor_client_queue():
                     from ScreenStateContext import ScreenStateContext
                     from process_image_for_output import process_image_for_output
 
-                    to_client_queue.put({
-                        'imageData': process_image_for_output(ScreenStateContext.background),
-                        'left': 0,
-                        'top': 0,
-                        'width': ScreenStateContext.screen_x,
-                        'height': ScreenStateContext.screen_y,
-                    })
-                    ScreenStateContext.reset_dirty_rect()
-                    ScreenStateContext.ready_for_send = False
+                    with ScreenStateContext.lock:
+                        to_client_queue.put({
+                            'imageData': process_image_for_output(ScreenStateContext.background),
+                            'left': 0,
+                            'top': 0,
+                            'width': ScreenStateContext.screen_x,
+                            'height': ScreenStateContext.screen_y,
+                        })
+                        ScreenStateContext.reset_dirty_rect()
+                        ScreenStateContext.ready_for_send = False
 
                 elif command['command'] == 'readyForMore':
                     from ScreenStateContext import ScreenStateContext
@@ -111,17 +112,19 @@ def monitor_client_queue():
                     print('ready for more sent:', ScreenStateContext.dirty_rect)
 
                     if ScreenStateContext.dirty_rect:
-                        to_client_queue.put({
-                            'imageData': process_image_for_output(ScreenStateContext.background.crop(ScreenStateContext.dirty_rect)),
-                            'left': ScreenStateContext.dirty_rect[0],
-                            'top': ScreenStateContext.dirty_rect[1],
-                            'width': ScreenStateContext.dirty_rect[2] - ScreenStateContext.dirty_rect[0],
-                            'height': ScreenStateContext.dirty_rect[3] - ScreenStateContext.dirty_rect[1],
-                        })
-                        ScreenStateContext.reset_dirty_rect()
-                        ScreenStateContext.ready_for_send = False
+                        with ScreenStateContext.lock:
+                            to_client_queue.put({
+                                'imageData': process_image_for_output(ScreenStateContext.background.crop(ScreenStateContext.dirty_rect)),
+                                'left': ScreenStateContext.dirty_rect[0],
+                                'top': ScreenStateContext.dirty_rect[1],
+                                'width': ScreenStateContext.dirty_rect[2] - ScreenStateContext.dirty_rect[0],
+                                'height': ScreenStateContext.dirty_rect[3] - ScreenStateContext.dirty_rect[1],
+                            })
+                            ScreenStateContext.reset_dirty_rect()
+                            ScreenStateContext.ready_for_send = False
                     else:
-                        ScreenStateContext.ready_for_send = True
+                        with ScreenStateContext.lock:
+                            ScreenStateContext.ready_for_send = True
                 else:
                     raise Exception(command)
             # else:
@@ -131,9 +134,6 @@ def monitor_client_queue():
             traceback.print_exc()
 
 
-VIEWPORT_HEIGHT = 800
-VIEWPORT_WIDTH = 750
-
 thread = threading.Thread(target=wsmain, args=(to_client_queue, from_client_queue))
 thread.start()
 
@@ -142,8 +142,10 @@ def main():
     from PIL import Image
     import subprocess
     import legacy_websockets
+    from ScreenStateContext import ScreenStateContext
+    import xdamage_test
 
-    proc = subprocess.Popen(['Xephyr', '-screen', f'{VIEWPORT_WIDTH}x{VIEWPORT_HEIGHT}', ':2'], shell=False)
+    proc = subprocess.Popen(['Xephyr', '-screen', f'{ScreenStateContext.screen_x}x{ScreenStateContext.screen_y}', ':2'], shell=False)
     pid = proc.pid
 
     thread = threading.Thread(target=monitor_client_queue, args=())
@@ -151,17 +153,16 @@ def main():
 
     time.sleep(4)
 
-    background = Image.new("L", (VIEWPORT_WIDTH, VIEWPORT_HEIGHT), (255,))
+    background = Image.new("L", (ScreenStateContext.screen_x, ScreenStateContext.screen_y), (255,))
     legacy_websockets.background = background
 
-    import xdamage_test
     thread_2 = threading.Thread(target=xdamage_test.main, args=(to_client_queue, pid))
     #xdamage_test.main(to_client_queue, pid)
     thread_2.start()
 
     #system("DISPLAY=:2 onboard &")
     system(f"DISPLAY=:2 matchbox-window-manager &")
-    system(f"DISPLAY=:2 firefox -P Xephyr -width {VIEWPORT_WIDTH} -height {VIEWPORT_HEIGHT} &")
+    system(f"DISPLAY=:2 firefox -P Xephyr -width {ScreenStateContext.screen_x} -height {ScreenStateContext.screen_y} &")
 
     #loop = asyncio.get_event_loop()
     app = aiohttp.web.Application()
