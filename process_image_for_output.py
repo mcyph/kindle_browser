@@ -8,7 +8,7 @@ from PIL import Image, ImageEnhance, ImageOps
 
 def process_image_for_output(image: Image) -> str:
     print("Processing image for output...", end='')
-    image = image.convert('L')
+    image = image.convert('L', dither=Image.NONE)
     #image = image.resize((image.width, image.height), resample=Image.Resampling.BILINEAR)
 
     #enhancer = ImageEnhance.Contrast(image)
@@ -20,14 +20,18 @@ def process_image_for_output(image: Image) -> str:
     #image = image.convert('L')
 
     def process(x):
-        if x < 96:
+        if x < 64:
             return 0
-        elif x < 160:
-            return 128
+        elif x < 128:
+            return 1
+        elif x < 192:
+            return 2
+        elif x < 220:
+            return 3
         else:
-            return 255
+            return 4
 
-    image = image.point(process, '1')
+    image = image.point(process, 'L')
     #image = image.convert('1')
     #image = image.convert('L')
 
@@ -35,12 +39,10 @@ def process_image_for_output(image: Image) -> str:
     width, height = image.size
     pixels = [pixels[i * width:(i + 1) * width] for i in range(height)]
     rle_encoded = [list(run_length.encode(i)) for i in pixels]
-    rle_encoded = repr(rle_encoded).replace('(255, 1), (0, 1)', '(1, 2)') \
-                                   .replace('(0, 1), (255, 1)', '(1, 2)') \
-                                   .replace('(255, ', '(2, ') \
-                                   .replace('(128, ', '(1, ') \
-                                   .replace('(0, 2), (2, 2)', '(1, 4)') \
-                                   .replace('), (', ',') \
+    # .replace('(255, 1), (0, 1)', '(1, 2)') \
+    #                                    .replace('(0, 1), (255, 1)', '(1, 2)') \
+    #
+    rle_encoded = repr(rle_encoded).replace('), (', ',') \
                                    .replace(', ', ',') \
                                    .replace('[(', '[') \
                                    .replace(')]', ']')

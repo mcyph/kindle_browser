@@ -59,7 +59,24 @@ def monitor_client_queue():
             #    system(f"DISPLAY=:2 xdotool mousemove {x} {y}")
             #    system(f"DISPLAY=:2 xdotool mouseup")
             elif command['type'] == 'command':
+                # * Space:
+                # KeyEvent: {'type': 'command', 'command': 'keyevent', 'keyEventType': 'keydown', 'altKey': False, 'shiftKey': False, 'ctrlKey': False, 'charCode': 0, 'keyCode': 32}
+                # KeyEvent: {'type': 'command', 'command': 'keyevent', 'keyEventType': 'keypress', 'altKey': False, 'shiftKey': False, 'ctrlKey': False, 'charCode': 32, 'keyCode': 32}
+                # KeyEvent: {'type': 'command', 'command': 'keyevent', 'keyEventType': 'keyup', 'altKey': False, 'shiftKey': False, 'ctrlKey': False, 'charCode': 0, 'keyCode': 32}
+                # * Backspace:
+                # KeyEvent: {'type': 'command', 'command': 'keyevent', 'keyEventType': 'keydown', 'altKey': False, 'shiftKey': False, 'ctrlKey': False, 'charCode': 0, 'keyCode': 8}
+                # KeyEvent: {'type': 'command', 'command': 'keyevent', 'keyEventType': 'keyup', 'altKey': False, 'shiftKey': False, 'ctrlKey': False, 'charCode': 0, 'keyCode': 8}
+                # * Period:
+                # KeyEvent: {'type': 'command', 'command': 'keyevent', 'keyEventType': 'keydown', 'altKey': False, 'shiftKey': False, 'ctrlKey': False, 'charCode': 0, 'keyCode': 190}
+                # KeyEvent: {'type': 'command', 'command': 'keyevent', 'keyEventType': 'keypress', 'altKey': False, 'shiftKey': False, 'ctrlKey': False, 'charCode': 46, 'keyCode': 46}
+                # KeyEvent: {'type': 'command', 'command': 'keyevent', 'keyEventType': 'keyup', 'altKey': False, 'shiftKey': False, 'ctrlKey': False, 'charCode': 0, 'keyCode': 190}
+                # * Enter:
+                # KeyEvent: {'type': 'command', 'command': 'keyevent', 'keyEventType': 'keydown', 'altKey': False, 'shiftKey': False, 'ctrlKey': False, 'charCode': 0, 'keyCode': 13}
+                # KeyEvent: {'type': 'command', 'command': 'keyevent', 'keyEventType': 'keypress', 'altKey': False, 'shiftKey': False, 'ctrlKey': False, 'charCode': 13, 'keyCode': 13}
+                # KeyEvent: {'type': 'command', 'command': 'keyevent', 'keyEventType': 'keyup', 'altKey': False, 'shiftKey': False, 'ctrlKey': False, 'charCode': 0, 'keyCode': 13}
+
                 if command['command'] == 'keyevent':
+                    print("KeyEvent:", command)
                     if command['keyEventType'] == 'keydown':
                         modifiers = []
                         if command['shiftKey']:
@@ -69,7 +86,17 @@ def monitor_client_queue():
                         if command['ctrlKey']:
                             modifiers.append('ctrl')
 
-                        modifiers.append(chr(command['keyCode']).upper() if command['shiftKey'] else chr(command['keyCode']).lower())  # charCode??
+                        if command['keyCode'] == 13:
+                            modifiers.append('Return')
+                        elif command['keyCode'] == 32:
+                            modifiers.append('space')
+                        elif command['keyCode'] == 8:
+                            modifiers.append('BackSpace')
+                        elif command['keyCode'] == 190:
+                            modifiers.append('period')
+                        else:
+                            modifiers.append(chr(command['keyCode']).upper() if command['shiftKey'] else chr(command['keyCode']).lower())  # charCode??
+
                         system(f"DISPLAY=:2 xdotool key {'+'.join(modifiers)}")
 
                 elif command['command'] == 'scroll_up':
@@ -96,6 +123,7 @@ def monitor_client_queue():
                     from process_image_for_output import process_image_for_output
 
                     with ScreenStateContext.lock:
+                        ScreenStateContext.ready_for_send = False
                         to_client_queue.put({
                             'imageData': process_image_for_output(ScreenStateContext.background),
                             'left': 0,
@@ -104,15 +132,15 @@ def monitor_client_queue():
                             'height': ScreenStateContext.screen_y,
                         })
                         ScreenStateContext.reset_dirty_rect()
-                        ScreenStateContext.ready_for_send = False
 
                 elif command['command'] == 'readyForMore':
                     from ScreenStateContext import ScreenStateContext
                     from process_image_for_output import process_image_for_output
                     print('ready for more sent:', ScreenStateContext.dirty_rect)
 
-                    if ScreenStateContext.dirty_rect:
-                        with ScreenStateContext.lock:
+                    with ScreenStateContext.lock:
+                        if ScreenStateContext.dirty_rect:
+                            ScreenStateContext.ready_for_send = False
                             to_client_queue.put({
                                 'imageData': process_image_for_output(ScreenStateContext.background.crop(ScreenStateContext.dirty_rect)),
                                 'left': ScreenStateContext.dirty_rect[0],
@@ -121,9 +149,7 @@ def monitor_client_queue():
                                 'height': ScreenStateContext.dirty_rect[3] - ScreenStateContext.dirty_rect[1],
                             })
                             ScreenStateContext.reset_dirty_rect()
-                            ScreenStateContext.ready_for_send = False
-                    else:
-                        with ScreenStateContext.lock:
+                        else:
                             ScreenStateContext.ready_for_send = True
                 else:
                     raise Exception(command)
@@ -145,13 +171,17 @@ def main():
     from ScreenStateContext import ScreenStateContext
     import xdamage_test
 
-    proc = subprocess.Popen(['Xephyr', '-screen', f'{ScreenStateContext.screen_x}x{ScreenStateContext.screen_y}', ':2'], shell=False)
+    proc = subprocess.Popen(['Xephyr',
+                             #'-br', '-ac', '-noreset',
+                             #'-glamor',
+                             #'-keybd', ',,,xkbmodel=evdev,xkblayout=de', #'-mouse',
+                             '-screen', f'{ScreenStateContext.screen_x}x{ScreenStateContext.screen_y}', ':2'], shell=False)
     pid = proc.pid
 
     thread = threading.Thread(target=monitor_client_queue, args=())
     thread.start()
 
-    time.sleep(4)
+    time.sleep(1)
 
     background = Image.new("L", (ScreenStateContext.screen_x, ScreenStateContext.screen_y), (255,))
     legacy_websockets.background = background

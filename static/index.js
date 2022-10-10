@@ -115,22 +115,28 @@ const startListener = function() {
 
     var darknessTypes = {
         0: '#000000',
-        1: '#545454',
-        2: '#FFFFFF',
+        1: '#333333',
+        2: '#545454',
+        3: '#AAAAAA',
+        4: '#FFFFFF',
     };
     var darknessNums = {
         0: 0,
-        1: 128,
-        2: 255,
+        1: 32,
+        2: 160,
+        3: 220,
+        4: 255,
     };
     var lineData = {
         0: ctx.createImageData(SCREEN_WIDTH, TIMES_BY*10),
         1: ctx.createImageData(SCREEN_WIDTH, TIMES_BY*10),
         2: ctx.createImageData(SCREEN_WIDTH, TIMES_BY*10),
+        3: ctx.createImageData(SCREEN_WIDTH, TIMES_BY*10),
+        4: ctx.createImageData(SCREEN_WIDTH, TIMES_BY*10),
     };
 
     for (var x=0; x<(SCREEN_WIDTH*TIMES_BY*10*4); x+=4) {
-        for (var y=0; y<3; y++) {
+        for (var y=0; y<5; y++) {
             for (var z=0; z<4; z++) {
                 if (z === 3) {
                     lineData[y].data[x + z] = 255;
@@ -145,22 +151,12 @@ const startListener = function() {
 
     wsConn.onmessage = function(message) {
         /*offset++;
-        if (offset === 3) {
+        if (offset === 2) {
             offset = 0;
         }*/
+
         var data = JSON.parse(message.data);
         var rleData = data.imageData;
-        var timeJobStarted = new Date().getTime() / 1000;
-
-        var timeNow = new Date().getTime() / 1000;
-        if (timeNow-timeJobStarted > 2) {
-            // Don't stall if taken too long to render
-            return;
-        }
-
-        //if (_jobId !== jobId) {
-        //    return;
-        //}
         var y;
 
         try {
@@ -186,7 +182,7 @@ const startListener = function() {
                         Math.round(((data.top)+y) * TIMES_BY) + offset,
                         0, 0,
                         Math.round(howLongFor * TIMES_BY), // TIMES_BY*
-                        3 //Math.round(TIMES_BY)
+                        2.1 //Math.round(TIMES_BY)
                     );
                     currentX += howLongFor;
                 }

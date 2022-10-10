@@ -35,14 +35,14 @@
          <div><button onclick="navigateTo('https://www.ltn.com.tw/')">Freedom Times</button></div>
          <div><button onclick="navigateTo('https://read.readmoo.com/')">ReadMoo</button></div>
       </div>
-      <div style="position: absolute; bottom: 20px; left: 0; text-align: justify; z-index: 9999999999999; border-top: 10px solid gray">
+      <div style="position: absolute; top: 1250px; left: 0; white-space: nowrap; z-index: 9999999999999; border-top: 10px solid gray; width: 1180px">
          <button id="btn_scroll_up" onmousedown="sendCmd(event, 'scroll_up')"><img src="/static/img/arrow-up.svg"></button>&nbsp;&nbsp;&nbsp;
          <button id="btn_top" onmousedown="sendCmd(event, 'top')"><img src="/static/img/arrow-bar-up.svg"></button>&nbsp;&nbsp;&nbsp;&nbsp;
          <button id="btn_back" onmousedown="sendCmd(event, 'back')"><img src="/static/img/arrow-left.svg"></button>&nbsp;&nbsp;&nbsp;
          <button id="btn_forward" onmousedown="sendCmd(event, 'forward')"><img src="/static/img/arrow-right.svg"></button>&nbsp;&nbsp;&nbsp;&nbsp;
          <button style="position: relative" onclick="this.style.position = 'relative'; this.firstChild.style.width = '140px'; this.firstChild.style.top = 0; event.stopPropagation();"><input id="input_dummy" onclick="this.parentNode.style.position = 'static'; this.style.top = '-300px'; this.style.width = '100%'; event.stopPropagation();" type="text" style="position: absolute; top: 0; left: 0; width: 140px; height: 140px; opacity: 0; z-index: 99999999999999999"><img src="/static/img/keyboard.svg"></button>&nbsp;&nbsp;&nbsp;&nbsp;
          <button id="btn_refresh" onmousedown="sendCmd(event, 'refresh')"><img src="/static/img/arrow-clockwise.svg"></button>&nbsp;&nbsp;&nbsp;&nbsp;
-         <button onmousedown="toggleNavMenu()"><img src="/static/img/plus.svg"></button>&nbsp;&nbsp;&nbsp;&nbsp;
+         <!--<button onmousedown="toggleNavMenu()"><img src="/static/img/plus.svg"></button>&nbsp;&nbsp;&nbsp;&nbsp;-->
          <button id="btn_scroll_down" onmousedown="sendCmd(event, 'scroll_down')"><img src="/static/img/arrow-down.svg"></button>
       </div>
       <div id="topEl" style="width: 100%; height: 100%; position: relative; z-index: -1; top:0; left:0">
