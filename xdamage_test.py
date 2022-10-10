@@ -25,6 +25,7 @@
 # Python 2/3 compatibility.
 from __future__ import print_function
 
+import time
 import sys
 import os
 import subprocess
@@ -47,7 +48,7 @@ import traceback
 
 
 def get_image_from_win(win, pt_w, pt_h, pt_x=0, pt_y=0):
-    #print(pt_w, pt_h, pt_x, pt_y)
+    print(pt_w, pt_h, pt_x, pt_y)
     try:
         raw = win.get_image(pt_x, pt_y, pt_w, pt_h, X.ZPixmap, 0xffffffff)
         image = Image.frombytes("RGB", (pt_w, pt_h), raw.data, "raw", "BGRX")
@@ -69,57 +70,81 @@ def check_ext(disp):
         print('DAMAGE version {}.{}'.format(r.major_version, r.minor_version))
 
 
-q_image_changed = Queue()
-
-
-def _image_changed_thread(to_client_queue):
+def send_if_changed(win, to_client_queue):
     from PIL import ImageChops
     from ScreenStateContext import ScreenStateContext
     from process_image_for_output import process_image_for_output
 
+    x1, y1, x2, y2 = ScreenStateContext.dirty_rect
+    image = get_image_from_win(win, x2-x1, y2-y1, x1, y1)
+    if not image:
+        ScreenStateContext.reset_dirty_rect()
+        return
+
+    if image.size == ScreenStateContext.background.size:
+        diff = ImageChops.difference(image.convert('L', dither=Image.NONE),
+                                     ScreenStateContext.background.convert('L', dither=Image.NONE))
+    else:
+        diff = ImageChops.difference(image.convert('L', dither=Image.NONE),
+                                     ScreenStateContext.background.crop(
+                                         (x1, y1, x2, y2)).convert('L', dither=Image.NONE))
+
+    if not diff.getbbox():
+        print("IGNORING BECAUSE NOT DIFFERENT ENOUGH: CONDITION 1")
+        ScreenStateContext.reset_dirty_rect()
+        return
+
+    # elif len(list(i for i in diff.getdata() if i)) < 10:
+    #    print("IGNORING BECAUSE NOT DIFFERENT ENOUGH: CONDITION 2", set(diff.getdata()))
+    #    continue
+
+    ScreenStateContext.paste(image, x1, y1)
+
+    to_client_queue.put({
+        'imageData': process_image_for_output(
+            ScreenStateContext.background.crop(ScreenStateContext.dirty_rect)),
+        'left': ScreenStateContext.dirty_rect[0],
+        'top': ScreenStateContext.dirty_rect[1],
+        'width': ScreenStateContext.dirty_rect[2] - ScreenStateContext.dirty_rect[0],
+        'height': ScreenStateContext.dirty_rect[3] - ScreenStateContext.dirty_rect[1],
+    })
+    ScreenStateContext.reset_dirty_rect()
+    ScreenStateContext.ready_for_send = False
+
+
+def _image_changed_thread(win, to_client_queue):
+    from ScreenStateContext import ScreenStateContext
+
     while True:
-        x, y, image = q_image_changed.get()
-
-        if image.size == ScreenStateContext.background.size:
-            diff = ImageChops.difference(image.convert('L', dither=Image.NONE),
-                                         ScreenStateContext.background.convert('L', dither=Image.NONE))
-        else:
-            diff = ImageChops.difference(image.convert('L', dither=Image.NONE),
-                                         ScreenStateContext.background.crop((x, y, x+image.size[0], y+image.size[1])).convert('L', dither=Image.NONE))
-
-        if not diff.getbbox():
-            print("IGNORING BECAUSE NOT DIFFERENT ENOUGH: CONDITION 1")
-            continue
-        elif len(set(diff.getdata())) < 10:
-            print("IGNORING BECAUSE NOT DIFFERENT ENOUGH: CONDITION 2", set(diff.getdata()))
-            continue
+        #x, y, width, height = q_image_changed.get()
+        #ScreenStateContext.add_to_dirty_rect(x, y, x+width, y+height)
 
         with ScreenStateContext.lock:
-            ScreenStateContext.paste(image, x, y)
+            if ScreenStateContext.ready_for_send and ScreenStateContext.dirty_rect:
+                print("SENDING:", ScreenStateContext.ready_for_send, ScreenStateContext.dirty_rect)
+                send_if_changed(win, to_client_queue)
+        time.sleep(0.1)
 
-            if ScreenStateContext.ready_for_send:
-                ScreenStateContext.ready_for_send = False
-                to_client_queue.put({
-                    'imageData': process_image_for_output(
-                        ScreenStateContext.background.crop(ScreenStateContext.dirty_rect)),
-                    'left': ScreenStateContext.dirty_rect[0],
-                    'top': ScreenStateContext.dirty_rect[1],
-                    'width': ScreenStateContext.dirty_rect[2] - ScreenStateContext.dirty_rect[0],
-                    'height': ScreenStateContext.dirty_rect[3] - ScreenStateContext.dirty_rect[1],
-                })
-                ScreenStateContext.reset_dirty_rect()
+
+#def _send_full_repaints_thread(to_client_queue, window1):
+#    from ScreenStateContext import ScreenStateContext
+#    while True:
+#        img = get_image_from_win(window1, ScreenStateContext.screen_x, ScreenStateContext.screen_y, 0, 0)
+#        #print(img)
+#        if img:
+#            q_image_changed.put((0, 0, ScreenStateContext.screen_x, ScreenStateContext.screen_y))
+#        time.sleep(1)
 
 
 def main(to_client_queue, pid):
-    t = threading.Thread(target=_image_changed_thread, args=(to_client_queue,))
-    t.start()
-
     d = display.Display()
     check_ext(d)
 
     window1_x_id = int(subprocess.check_output(['xdotool', 'search', '--any',
                                                 '--pid', str(pid),
-                                                '--name', 'Xephyr on :2.0']))
+                                                '--name', 'Xnest',
+                                                #'Xephyr on :2.0'
+                                                ]).decode('ascii').strip().split('\n')[-1])
 
     window1 = d.create_resource_object('window', window1_x_id)
 
@@ -130,18 +155,24 @@ def main(to_client_queue, pid):
         min_height=50
     )
 
+    t = threading.Thread(target=_image_changed_thread, args=[window1, to_client_queue])
+    t.start()
+
+    #t = threading.Thread(target=_send_full_repaints_thread, args=(to_client_queue, window1))
+    #t.start()
+
     while 1:
         event = d.next_event()
+        #print("EVENT:", event)
         if event.type == X.Expose:
             if event.count == 0:
                 pass
         elif event.type == d.extension_event.DamageNotify:
-            get_area = event.area.width, event.area.height, event.area.x, event.area.y
-            #get_area = ScreenStateContext.screen_x, ScreenStateContext.screen_y, 0, 0
-            print("DAMAGE DETECTED:", get_area)
-
-            image = get_image_from_win(window1, *get_area)
-            q_image_changed.put((event.area.x, event.area.y, image))
+            from ScreenStateContext import ScreenStateContext
+            ScreenStateContext.add_to_dirty_rect(event.area.x,
+                                                 event.area.y,
+                                                 event.area.width + event.area.x,
+                                                 event.area.height + event.area.y)
         elif event.type == X.DestroyNotify:
             sys.exit(0)
         else:

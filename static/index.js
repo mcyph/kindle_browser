@@ -3,10 +3,10 @@
 var active = false;
 
 var IGNORE_ABOVE = 1300;
-var SCREEN_WIDTH = 1200; // NOTE ME!
+var SCREEN_WIDTH = 1236; // NOTE ME!
 //var SCREEN_WIDTH = 800*3;
 
-if (true) {
+if (false) {
     var TIMES_BY = 2.9;
     var TIMES_EVENTS_BY = 0.6;
 } else {
@@ -128,14 +128,14 @@ const startListener = function() {
         4: 255,
     };
     var lineData = {
-        0: ctx.createImageData(SCREEN_WIDTH, TIMES_BY*10),
-        1: ctx.createImageData(SCREEN_WIDTH, TIMES_BY*10),
-        2: ctx.createImageData(SCREEN_WIDTH, TIMES_BY*10),
-        3: ctx.createImageData(SCREEN_WIDTH, TIMES_BY*10),
-        4: ctx.createImageData(SCREEN_WIDTH, TIMES_BY*10),
+        0: ctx.createImageData(SCREEN_WIDTH, 20),
+        1: ctx.createImageData(SCREEN_WIDTH, 20),
+        2: ctx.createImageData(SCREEN_WIDTH, 20),
+        3: ctx.createImageData(SCREEN_WIDTH, 20),
+        4: ctx.createImageData(SCREEN_WIDTH, 20),
     };
 
-    for (var x=0; x<(SCREEN_WIDTH*TIMES_BY*10*4); x+=4) {
+    for (var x=0; x<(SCREEN_WIDTH * 20); x+=4) {
         for (var y=0; y<5; y++) {
             for (var z=0; z<4; z++) {
                 if (z === 3) {
@@ -158,6 +158,7 @@ const startListener = function() {
         var data = JSON.parse(message.data);
         var rleData = data.imageData;
         var y;
+        var numOps = 0;
 
         try {
             for (y=0; y<rleData.length; y++) {
@@ -182,9 +183,10 @@ const startListener = function() {
                         Math.round(((data.top)+y) * TIMES_BY) + offset,
                         0, 0,
                         Math.round(howLongFor * TIMES_BY), // TIMES_BY*
-                        2.1 //Math.round(TIMES_BY)
+                        Math.round(TIMES_BY)
                     );
                     currentX += howLongFor;
+                    numOps++;
                 }
 
                 ctx.closePath();
@@ -194,7 +196,7 @@ const startListener = function() {
         }
         setTimeout(function() {
             sendJSON({ type: 'command', command: 'readyForMore' });
-        }, 0);
+        }, numOps > 2000 ? 600 : 0);
     }
 }
 

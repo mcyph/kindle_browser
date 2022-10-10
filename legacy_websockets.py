@@ -40,7 +40,7 @@ class WebSocket(Protocol):
                     from_client_queue.put(command)
                 else:
                     print("CALLING FIRST TIME LOOP", i_msg)
-                    reactor.callLater(0, self.loop)
+                    reactor.callLater(0.05, self.loop)
     
     def loop(self):
         if not queue.empty():
@@ -50,7 +50,7 @@ class WebSocket(Protocol):
             except KeyError:
                 queue.put(i_data)
                 raise
-        reactor.callLater(0, self.loop)
+        reactor.callLater(0.05, self.loop)
 
     def connectionLost(self, reason):
         if self in self.sockets:

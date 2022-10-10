@@ -6,6 +6,8 @@ from os import system
 from queue import Queue
 
 from legacy_websockets import main as wsmain
+from ScreenStateContext import ScreenStateContext
+from process_image_for_output import process_image_for_output
 
 
 HOST = '0.0.0.0'
@@ -119,38 +121,14 @@ def monitor_client_queue():
                     pass
 
                 elif command['command'] == 'initialFrame':
-                    from ScreenStateContext import ScreenStateContext
-                    from process_image_for_output import process_image_for_output
-
                     with ScreenStateContext.lock:
-                        ScreenStateContext.ready_for_send = False
-                        to_client_queue.put({
-                            'imageData': process_image_for_output(ScreenStateContext.background),
-                            'left': 0,
-                            'top': 0,
-                            'width': ScreenStateContext.screen_x,
-                            'height': ScreenStateContext.screen_y,
-                        })
-                        ScreenStateContext.reset_dirty_rect()
+                        ScreenStateContext.ready_for_send = True
 
                 elif command['command'] == 'readyForMore':
-                    from ScreenStateContext import ScreenStateContext
-                    from process_image_for_output import process_image_for_output
                     print('ready for more sent:', ScreenStateContext.dirty_rect)
 
                     with ScreenStateContext.lock:
-                        if ScreenStateContext.dirty_rect:
-                            ScreenStateContext.ready_for_send = False
-                            to_client_queue.put({
-                                'imageData': process_image_for_output(ScreenStateContext.background.crop(ScreenStateContext.dirty_rect)),
-                                'left': ScreenStateContext.dirty_rect[0],
-                                'top': ScreenStateContext.dirty_rect[1],
-                                'width': ScreenStateContext.dirty_rect[2] - ScreenStateContext.dirty_rect[0],
-                                'height': ScreenStateContext.dirty_rect[3] - ScreenStateContext.dirty_rect[1],
-                            })
-                            ScreenStateContext.reset_dirty_rect()
-                        else:
-                            ScreenStateContext.ready_for_send = True
+                        ScreenStateContext.ready_for_send = True
                 else:
                     raise Exception(command)
             # else:
@@ -171,11 +149,19 @@ def main():
     from ScreenStateContext import ScreenStateContext
     import xdamage_test
 
-    proc = subprocess.Popen(['Xephyr',
-                             #'-br', '-ac', '-noreset',
+    proc = subprocess.Popen(['Xnest',
+                             '-br', '-render', 'gray', '-dpi', '400',
+                             '-br', '-ac', '-noreset',
                              #'-glamor',
                              #'-keybd', ',,,xkbmodel=evdev,xkblayout=de', #'-mouse',
-                             '-screen', f'{ScreenStateContext.screen_x}x{ScreenStateContext.screen_y}', ':2'], shell=False)
+
+                             #'-depth', '24',
+                             '-geometry', f'{ScreenStateContext.screen_x}x{ScreenStateContext.screen_y}',
+
+                             #'-screen', f'{ScreenStateContext.screen_x}x{ScreenStateContext.screen_y}x16',
+                             ':2',
+                             ],
+                            shell=False)
     pid = proc.pid
 
     thread = threading.Thread(target=monitor_client_queue, args=())
@@ -191,7 +177,7 @@ def main():
     thread_2.start()
 
     #system("DISPLAY=:2 onboard &")
-    system(f"DISPLAY=:2 matchbox-window-manager &")
+    #system(f"DISPLAY=:2 matchbox-window-manager &")
     system(f"DISPLAY=:2 firefox -P Xephyr -width {ScreenStateContext.screen_x} -height {ScreenStateContext.screen_y} &")
 
     #loop = asyncio.get_event_loop()

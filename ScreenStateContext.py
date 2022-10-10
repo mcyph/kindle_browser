@@ -27,6 +27,15 @@ class _ScreenStateContext:
         else:
             self.dirty_rect = [x1, y1, x2, y2]
 
+        if self.dirty_rect[0] < 0:
+            self.dirty_rect[0] = 0
+        if self.dirty_rect[1] < 0:
+            self.dirty_rect[1] = 0
+        if self.dirty_rect[2] > self.screen_x:
+            self.dirty_rect[2] = self.screen_x
+        if self.dirty_rect[3] > self.screen_y:
+            self.dirty_rect[3] = self.screen_y
+
     def paste(self, image, x, y):
         self.background.paste(image, (x, y))
         self.add_to_dirty_rect(x, y, x+image.width, y+image.height)
