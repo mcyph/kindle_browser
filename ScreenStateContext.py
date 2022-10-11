@@ -41,4 +41,4 @@ class _ScreenStateContext:
         self.add_to_dirty_rect(x, y, x+image.width, y+image.height)
 
 
-ScreenStateContext = _ScreenStateContext(750, 800)
+ScreenStateContext = _ScreenStateContext(750, 860)

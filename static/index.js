@@ -148,6 +148,7 @@ const startListener = function() {
     }
 
     var offset = 0;
+    var cursorId = 0;
 
     wsConn.onmessage = function(message) {
         /*offset++;
@@ -156,6 +157,19 @@ const startListener = function() {
         }*/
 
         var data = JSON.parse(message.data);
+
+        if (data['type'] === 'cursor_move') {
+            var useCursorId = ++cursorId;
+            setTimeout(function() {
+                if (cursorId !== useCursorId) {
+                    return;
+                }
+                var cursor = document.getElementById('cursor');
+                cursor.style.left = data['relative_x']*TIMES_BY+'px';
+                cursor.style.top = data['relative_y']*TIMES_BY+'px';
+            }, 100);
+            return;
+        }
         var rleData = data.imageData;
         var y;
         var numOps = 0;
@@ -196,7 +210,7 @@ const startListener = function() {
         }
         setTimeout(function() {
             sendJSON({ type: 'command', command: 'readyForMore' });
-        }, numOps > 2000 ? 600 : 0);
+        }, numOps > 2000 ? 100 : 0);
     }
 }
 

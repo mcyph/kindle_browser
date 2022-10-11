@@ -35,7 +35,7 @@
          <div><button onclick="navigateTo('https://www.ltn.com.tw/')">Freedom Times</button></div>
          <div><button onclick="navigateTo('https://read.readmoo.com/')">ReadMoo</button></div>
       </div>
-      <div style="position: absolute; top: 1250px; left: 0; white-space: nowrap; z-index: 9999999999999; border-top: 10px solid gray; width: 1180px">
+      <div style="position: absolute; top: 1350px; left: 0; white-space: nowrap; z-index: 9999999999999; border-top: 10px solid gray; width: 1180px">
          <button id="btn_scroll_up" onmousedown="sendCmd(event, 'scroll_up')"><img src="/static/img/arrow-up.svg"></button>&nbsp;&nbsp;&nbsp;
          <button id="btn_top" onmousedown="sendCmd(event, 'top')"><img src="/static/img/arrow-bar-up.svg"></button>&nbsp;&nbsp;&nbsp;&nbsp;
          <button id="btn_back" onmousedown="sendCmd(event, 'back')"><img src="/static/img/arrow-left.svg"></button>&nbsp;&nbsp;&nbsp;
@@ -49,6 +49,8 @@
          <div id="messageDiv" style="position: absolute; bottom: 300px; left: 0">INITIAL MESSAGE</div>
          <canvas id="chromiumCanvas" width="1236" height="1400"></canvas>
       </div>
+
+      <img id="cursor" src="/static/img/cursor.png" style="z-index: 9999999; position: absolute; top: 0; left: 0" />
    </embed>
    </body>
 </html>

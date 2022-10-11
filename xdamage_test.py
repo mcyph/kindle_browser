@@ -45,6 +45,7 @@ except ModuleNotFoundError:
 from Xlib.ext import damage
 from PIL import Image
 import traceback
+from x_motion_change_events import run_motion_change_event_listener
 
 
 def get_image_from_win(win, pt_w, pt_h, pt_x=0, pt_y=0):
@@ -101,6 +102,7 @@ def send_if_changed(win, to_client_queue):
     ScreenStateContext.paste(image, x1, y1)
 
     to_client_queue.put({
+        'type': 'image',
         'imageData': process_image_for_output(
             ScreenStateContext.background.crop(ScreenStateContext.dirty_rect)),
         'left': ScreenStateContext.dirty_rect[0],
@@ -158,6 +160,9 @@ def main(to_client_queue, pid):
     t = threading.Thread(target=_image_changed_thread, args=[window1, to_client_queue])
     t.start()
 
+    t = threading.Thread(target=run_motion_change_event_listener, args=[to_client_queue])  # window1
+    t.start()
+
     #t = threading.Thread(target=_send_full_repaints_thread, args=(to_client_queue, window1))
     #t.start()
 
@@ -176,5 +181,5 @@ def main(to_client_queue, pid):
         elif event.type == X.DestroyNotify:
             sys.exit(0)
         else:
-            raise Exception(f"Unknown event type: {event.type}")
+            print(f"WARNING: Unknown event type: {event.type}")
 
