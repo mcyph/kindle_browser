@@ -65,7 +65,7 @@ def _check_queue(to_client_queue):
                 'relative_x': event.root_x,
                 'relative_y': event.root_y,
             })
-        time.sleep(0.1)
+        time.sleep(0.05)
 
 
 def run_motion_change_event_listener(to_client_queue):

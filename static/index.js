@@ -160,49 +160,71 @@ const startListener = function() {
 
         if (data['type'] === 'cursor_move') {
             var useCursorId = ++cursorId;
-            setTimeout(function() {
+            setTimeout(function () {
                 if (cursorId !== useCursorId) {
                     return;
                 }
                 var cursor = document.getElementById('cursor');
-                cursor.style.left = data['relative_x']*TIMES_BY+'px';
-                cursor.style.top = data['relative_y']*TIMES_BY+'px';
-            }, 100);
+                data['relative_y'] -= 30; // HACK!
+                data['relative_x'] -= 5; // HACK!
+                cursor.style.left = data['relative_x'] * TIMES_BY + 'px';
+                cursor.style.top = data['relative_y'] * TIMES_BY + 'px';
+            }, 0);
             return;
         }
-        var rleData = data.imageData;
+
+        var unRLEData = toByteArray(data.imageData);
+        var b = fflate.gunzipSync(unRLEData);
+        var o = [];
+        for (var i=0; i<b.length; i++) {
+            o.push(String.fromCharCode(b[i]));
+        }
+        var rleData = JSON.parse(o.join(""));
+
         var y;
         var numOps = 0;
 
         try {
-            for (y=0; y<rleData.length; y++) {
-                var currentX = 0;
+
+            for (var useDarkness=0; useDarkness<5; useDarkness++) {
                 ctx.beginPath();
+                ctx.fillStyle = darknessTypes[useDarkness];
 
-                for (var x=0; x<rleData[y].length; x += 2) {
-                    var darkness = rleData[y][x],
-                        howLongFor = rleData[y][x+1];
+                for (y = 0; y < rleData.length; y++) {
+                    var currentX = 0;
 
-                    /*ctx.beginPath();
-                    ctx.fillStyle = darknessTypes[darkness];
-                    ctx.fillRect(
-                        parseInt(data.left+(currentX*TIMES_BY)), parseInt(data.top + initialY + y*TIMES_BY),
-                        howLongFor*TIMES_BY, TIMES_BY
-                    );
-                    ctx.closePath();*/
+                    for (var x = 0; x < rleData[y].length; x += 2) {
+                        var darkness = rleData[y][x],
+                            howLongFor = rleData[y][x + 1];
 
-                    ctx.putImageData(
-                        lineData[darkness],
-                        Math.round((data.left+currentX) * TIMES_BY),
-                        Math.round(((data.top)+y) * TIMES_BY) + offset,
-                        0, 0,
-                        Math.round(howLongFor * TIMES_BY), // TIMES_BY*
-                        Math.round(TIMES_BY)
-                    );
-                    currentX += howLongFor;
-                    numOps++;
+                        if (darkness === useDarkness) {
+                            if (true) {
+                                //ctx.beginPath();
+                                //ctx.fillStyle = darknessTypes[darkness];
+                                ctx.rect(
+                                    Math.round(data.left + (currentX * TIMES_BY)),
+                                    Math.round(data.top + y * TIMES_BY),
+                                    Math.round(howLongFor * TIMES_BY),
+                                    Math.round(TIMES_BY)
+                                );
+                                //ctx.closePath();
+                            } else {
+                                ctx.putImageData(
+                                    lineData[darkness],
+                                    Math.round((data.left + currentX) * TIMES_BY),
+                                    Math.round(((data.top) + y) * TIMES_BY) + offset,
+                                    0, 0,
+                                    Math.round(howLongFor * TIMES_BY), // TIMES_BY*
+                                    Math.round(TIMES_BY)
+                                );
+                            }
+                        }
+                        currentX += howLongFor;
+                        numOps++;
+                    }
                 }
 
+                ctx.fill();
                 ctx.closePath();
             }
         } catch(e) {
@@ -210,7 +232,7 @@ const startListener = function() {
         }
         setTimeout(function() {
             sendJSON({ type: 'command', command: 'readyForMore' });
-        }, numOps > 2000 ? 100 : 0);
+        }, numOps > 2000 ? 0 : 0);
     }
 }
 

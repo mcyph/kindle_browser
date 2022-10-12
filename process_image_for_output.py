@@ -42,13 +42,14 @@ def process_image_for_output(image: Image) -> str:
     # .replace('(255, 1), (0, 1)', '(1, 2)') \
     #                                    .replace('(0, 1), (255, 1)', '(1, 2)') \
     #
+    #print(rle_encoded)
     rle_encoded = repr(rle_encoded).replace('), (', ',') \
                                    .replace(', ', ',') \
                                    .replace('[(', '[') \
                                    .replace(')]', ']')
     rle_encoded = eval(rle_encoded)
 
-    #print(rle_encoded)
+
     
     #buf = io.BytesIO()
     #image.save(buf, format='PNG')

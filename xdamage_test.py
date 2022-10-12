@@ -25,6 +25,7 @@
 # Python 2/3 compatibility.
 from __future__ import print_function
 
+import base64
 import time
 import sys
 import os
@@ -46,6 +47,7 @@ from Xlib.ext import damage
 from PIL import Image
 import traceback
 from x_motion_change_events import run_motion_change_event_listener
+import gzip
 
 
 def get_image_from_win(win, pt_w, pt_h, pt_x=0, pt_y=0):
@@ -100,11 +102,13 @@ def send_if_changed(win, to_client_queue):
     #    continue
 
     ScreenStateContext.paste(image, x1, y1)
+    import json
+    import zlib
 
     to_client_queue.put({
         'type': 'image',
-        'imageData': process_image_for_output(
-            ScreenStateContext.background.crop(ScreenStateContext.dirty_rect)),
+        'imageData': base64.b64encode(gzip.compress(json.dumps(process_image_for_output(
+            ScreenStateContext.background.crop(ScreenStateContext.dirty_rect))).encode('ascii'))).decode('ascii'),
         'left': ScreenStateContext.dirty_rect[0],
         'top': ScreenStateContext.dirty_rect[1],
         'width': ScreenStateContext.dirty_rect[2] - ScreenStateContext.dirty_rect[0],
