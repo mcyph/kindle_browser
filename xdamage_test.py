@@ -105,14 +105,16 @@ def send_if_changed(win, to_client_queue):
     import json
     import zlib
 
+    img = ScreenStateContext.background.crop(ScreenStateContext.dirty_rect)
     to_client_queue.put({
         'type': 'image',
-        'imageData': base64.b64encode(gzip.compress(json.dumps(process_image_for_output(
-            ScreenStateContext.background.crop(ScreenStateContext.dirty_rect))).encode('ascii'))).decode('ascii'),
+        #'imageData': base64.b64encode(gzip.compress(json.dumps(process_image_for_output(
+        #    ScreenStateContext.background.crop(ScreenStateContext.dirty_rect))).encode('ascii'))).decode('ascii'),
+        'imageData': list(process_image_for_output(img)),
         'left': ScreenStateContext.dirty_rect[0],
         'top': ScreenStateContext.dirty_rect[1],
-        'width': ScreenStateContext.dirty_rect[2] - ScreenStateContext.dirty_rect[0],
-        'height': ScreenStateContext.dirty_rect[3] - ScreenStateContext.dirty_rect[1],
+        'width': img.size[0],
+        'height': img.size[1],
     })
     ScreenStateContext.reset_dirty_rect()
     ScreenStateContext.ready_for_send = False

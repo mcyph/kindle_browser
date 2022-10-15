@@ -54,40 +54,44 @@ const startListener = function() {
 
     inputDummy.onkeydown = function(e) {
         sendKeyEvent('keydown', e);
-    }
+    };
     inputDummy.onkeyup = function(e) {
         sendKeyEvent('keyup', e);
-    }
+    };
     inputDummy.onkeypress = function(e) {
         sendKeyEvent('keypress', e);
-    }
+    };
 
     window.sendCmd = function(evt, cmd) {
         evt.preventDefault();
         evt.stopPropagation();
         sendJSON({ type: 'command', command: cmd });
-    }
+    };
 
     window.navigateTo = function(url) {
         sendJSON({ type: 'command', command: 'navigate', url: url });
         toggleNavMenu();
-    }
+    };
 
     document.addEventListener('mousemove', function(e) {
-        if (e.pageY < IGNORE_ABOVE)
-            sendJSON({ type: 'mouseMove', left: e.pageX, top: e.pageY });
+        if (e.pageY < IGNORE_ABOVE) {
+            sendJSON({type: 'mouseMove', left: e.pageX, top: e.pageY});
+        }
     });
     document.addEventListener('mousedown', function(e) {
-        if (e.pageY < IGNORE_ABOVE)
+        if (e.pageY < IGNORE_ABOVE) {
             sendJSON({ type: 'mouseDown', left: e.pageX, top: e.pageY });
+        }
     });
     document.addEventListener('mouseup', function(e) {
-        if (e.pageY < IGNORE_ABOVE)
-            sendJSON({ type: 'mouseUp', left: e.pageX, top: e.pageY });
+        if (e.pageY < IGNORE_ABOVE) {
+            sendJSON({type: 'mouseUp', left: e.pageX, top: e.pageY});
+        }
     });
     document.addEventListener('click', function(e) {
-        if (e.pageY < IGNORE_ABOVE)
-            sendJSON({ type: 'click', left: e.pageX, top: e.pageY });
+        if (e.pageY < IGNORE_ABOVE) {
+            sendJSON({type: 'click', left: e.pageX, top: e.pageY});
+        }
     });
     /*document.onscroll = function(e) {
         sendJSON({
@@ -104,58 +108,33 @@ const startListener = function() {
         setMessage("");
         wsConn.send('firstData!');
         sendJSON({ type: 'command', command: 'initialFrame' });
-    }
+    };
     wsConn.onclose = function(e) {
         setMessage("Disconn. " + JSON.stringify(e));
         active = false;
-    }
+    };
     wsConn.onerror = function(e, code) {
         setMessage("ERROR " + code + e);
-    }
-
-    var darknessTypes = {
-        0: '#000000',
-        1: '#333333',
-        2: '#545454',
-        3: '#AAAAAA',
-        4: '#FFFFFF',
-    };
-    var darknessNums = {
-        0: 0,
-        1: 32,
-        2: 160,
-        3: 220,
-        4: 255,
-    };
-    var lineData = {
-        0: ctx.createImageData(SCREEN_WIDTH, 20),
-        1: ctx.createImageData(SCREEN_WIDTH, 20),
-        2: ctx.createImageData(SCREEN_WIDTH, 20),
-        3: ctx.createImageData(SCREEN_WIDTH, 20),
-        4: ctx.createImageData(SCREEN_WIDTH, 20),
     };
 
-    for (var x=0; x<(SCREEN_WIDTH * 20); x+=4) {
-        for (var y=0; y<5; y++) {
-            for (var z=0; z<4; z++) {
-                if (z === 3) {
-                    lineData[y].data[x + z] = 255;
-                } else {
-                    lineData[y].data[x + z] = darknessNums[y];
-                }
-            }
+    var lineData = [];
+    var DIVISOR = 64;
+
+    for (var i=0; i<Math.ceil(255/DIVISOR); i++) {
+        var imData = ctx.createImageData(1300, 5);
+        for (var j=0; j<1300*4*5; j+=4) {
+            imData.data[j+0] = i * DIVISOR;
+            imData.data[j+1] = i * DIVISOR;
+            imData.data[j+2] = i * DIVISOR;
+            imData.data[j+3] = 255;
         }
+        lineData.push(imData);
     }
 
-    var offset = 0;
     var cursorId = 0;
+    //ctx.scale(TIMES_BY, TIMES_BY);
 
     wsConn.onmessage = function(message) {
-        /*offset++;
-        if (offset === 2) {
-            offset = 0;
-        }*/
-
         var data = JSON.parse(message.data);
 
         if (data['type'] === 'cursor_move') {
@@ -173,66 +152,71 @@ const startListener = function() {
             return;
         }
 
-        var unRLEData = toByteArray(data.imageData);
-        var b = fflate.gunzipSync(unRLEData);
-        var o = [];
-        for (var i=0; i<b.length; i++) {
-            o.push(String.fromCharCode(b[i]));
-        }
-        var rleData = JSON.parse(o.join(""));
+        var x = 0;
+        var y = 0;
+        var total = 0;
+        var darkness, runsFor;
+        var rleData = data.imageData;
+        var width = data.width;
+        var height = data.height;
+        var SINGLE_VALUES_FROM = Math.floor((255 / DIVISOR)) + 1;
 
-        var y;
-        var numOps = 0;
+        //alert(!rleData || rleData.length)
+
+        var drawFor = function(darkness, amount) {
+            try {
+                ctx.putImageData(
+                    lineData[darkness],
+                    Math.ceil((data.left + x) * TIMES_BY),
+                    Math.ceil((data.top + y) * TIMES_BY),
+                    0, 0,
+                    Math.ceil(TIMES_BY * amount),
+                    Math.ceil(TIMES_BY)
+                );
+            } catch (e) {
+                alert("ERROR DRAWFOR: "+darkness+" "+amount+" "+lineData.length+" "+lineData[darkness]);
+                throw e;
+            }
+        };
 
         try {
+            for (var i=0; i<rleData.length; i++) {
+                var j = rleData[i];
+                if (j >= SINGLE_VALUES_FROM) {
+                    darkness = j - SINGLE_VALUES_FROM;
+                    runsFor = 1;
+                } else {
+                    darkness = j;
+                    runsFor = rleData[i+1];
+                    i += 1;
+                }
+                total += runsFor;
 
-            for (var useDarkness=0; useDarkness<5; useDarkness++) {
-                ctx.beginPath();
-                ctx.fillStyle = darknessTypes[useDarkness];
-
-                for (y = 0; y < rleData.length; y++) {
-                    var currentX = 0;
-
-                    for (var x = 0; x < rleData[y].length; x += 2) {
-                        var darkness = rleData[y][x],
-                            howLongFor = rleData[y][x + 1];
-
-                        if (darkness === useDarkness) {
-                            if (true) {
-                                //ctx.beginPath();
-                                //ctx.fillStyle = darknessTypes[darkness];
-                                ctx.rect(
-                                    Math.round(data.left + (currentX * TIMES_BY)),
-                                    Math.round(data.top + y * TIMES_BY),
-                                    Math.round(howLongFor * TIMES_BY),
-                                    Math.round(TIMES_BY)
-                                );
-                                //ctx.closePath();
-                            } else {
-                                ctx.putImageData(
-                                    lineData[darkness],
-                                    Math.round((data.left + currentX) * TIMES_BY),
-                                    Math.round(((data.top) + y) * TIMES_BY) + offset,
-                                    0, 0,
-                                    Math.round(howLongFor * TIMES_BY), // TIMES_BY*
-                                    Math.round(TIMES_BY)
-                                );
-                            }
-                        }
-                        currentX += howLongFor;
-                        numOps++;
+                while ((x+runsFor) > width) {
+                    // Goes to next line
+                    var toEndOfLine = width-x;
+                    if (toEndOfLine) {
+                        drawFor(darkness, toEndOfLine);
+                        x += toEndOfLine;
                     }
+                    runsFor -= toEndOfLine;
+                    y += 1;
+                    x = 0;
                 }
 
-                ctx.fill();
-                ctx.closePath();
+                if (runsFor) {
+                    // All on same line
+                    drawFor(darkness, runsFor);
+                    x += runsFor;
+                }
             }
         } catch(e) {
-            setMessage("MSG ERROR: "+e);
+            setMessage("MSG ERROR: "+e+" "+e.lineNumber);
         }
+
         setTimeout(function() {
             sendJSON({ type: 'command', command: 'readyForMore' });
-        }, numOps > 2000 ? 0 : 0);
+        }, 0);
     }
 }
 

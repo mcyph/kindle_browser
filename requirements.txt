@@ -6,3 +6,5 @@ aiohttp[speedups]
 
 twisted
 python-xlib
+numpy
+numba
