@@ -1,13 +1,16 @@
 import json
 import time
 import threading
+import subprocess
 import aiohttp.web
 from os import system
+from PIL import Image
 from queue import Queue
 
-from legacy_websockets import main as wsmain
-from ScreenStateContext import ScreenStateContext
-from process_image_for_output import process_image_for_output
+from src import LegacyWebSocket
+from src import x_damage_events
+from src.LegacyWebSocket import main as wsmain
+from src.ScreenStateContext import ScreenStateContext
 
 
 HOST = '0.0.0.0'
@@ -97,7 +100,9 @@ def monitor_client_queue():
                         elif command['keyCode'] == 190:
                             modifiers.append('period')
                         else:
-                            modifiers.append(chr(command['keyCode']).upper() if command['shiftKey'] else chr(command['keyCode']).lower())  # charCode??
+                            modifiers.append(chr(command['keyCode']).upper()
+                                             if command['shiftKey']
+                                             else chr(command['keyCode']).lower())  # charCode??
 
                         system(f"DISPLAY=:2 xdotool key {'+'.join(modifiers)}")
 
@@ -138,41 +143,38 @@ def monitor_client_queue():
             traceback.print_exc()
 
 
-thread = threading.Thread(target=wsmain, args=(to_client_queue, from_client_queue))
+thread = threading.Thread(target=wsmain,
+                          args=(to_client_queue, from_client_queue))
 thread.start()
 
 
 def main():
-    from PIL import Image
-    import subprocess
-    import legacy_websockets
-    from ScreenStateContext import ScreenStateContext
-    import xdamage_test
+    proc = subprocess.Popen([
+        'Xnest',
+        '-br', '-render', 'gray', '-dpi', '400',
+        '-br', '-ac', '-noreset',
+        #'-glamor',
+        #'-keybd', ',,,xkbmodel=evdev,xkblayout=de', #'-mouse',
 
-    proc = subprocess.Popen(['Xnest',
-                             '-br', '-render', 'gray', '-dpi', '400',
-                             '-br', '-ac', '-noreset',
-                             #'-glamor',
-                             #'-keybd', ',,,xkbmodel=evdev,xkblayout=de', #'-mouse',
+        #'-depth', '24',
+        '-geometry', f'{ScreenStateContext.screen_x}x{ScreenStateContext.screen_y}',
 
-                             #'-depth', '24',
-                             '-geometry', f'{ScreenStateContext.screen_x}x{ScreenStateContext.screen_y}',
-
-                             #'-screen', f'{ScreenStateContext.screen_x}x{ScreenStateContext.screen_y}x16',
-                             ':2',
-                             ],
-                            shell=False)
+        #'-screen', f'{ScreenStateContext.screen_x}x{ScreenStateContext.screen_y}x16',
+        ':2',
+    ], shell=False)
     pid = proc.pid
 
-    thread = threading.Thread(target=monitor_client_queue, args=())
+    thread = threading.Thread(target=monitor_client_queue,
+                              args=())
     thread.start()
 
     time.sleep(1)
 
     background = Image.new("L", (ScreenStateContext.screen_x, ScreenStateContext.screen_y), (255,))
-    legacy_websockets.background = background
+    LegacyWebSocket.background = background
 
-    thread_2 = threading.Thread(target=xdamage_test.main, args=(to_client_queue, pid))
+    thread_2 = threading.Thread(target=x_damage_events.main,
+                                args=(to_client_queue, pid))
     #xdamage_test.main(to_client_queue, pid)
     thread_2.start()
 
@@ -182,7 +184,8 @@ def main():
 
     #loop = asyncio.get_event_loop()
     app = aiohttp.web.Application()
-    app.add_routes([aiohttp.web.static('/static', './static', show_index=True)])
+    app.add_routes([aiohttp.web.static('/static', './static',
+                                       show_index=True)])
     app.router.add_route('GET', '/', get)
     app.router.add_route('GET', '/ws', websocket_handler)
     aiohttp.web.run_app(app, host=HOST, port=PORT)

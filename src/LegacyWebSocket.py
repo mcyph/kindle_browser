@@ -6,13 +6,11 @@ import hashlib
 from twisted.internet import reactor
 from twisted.internet.protocol import Factory, Protocol
 
-from process_image_for_output import process_image_for_output
-
 
 connections = {}
 
 
-class WebSocket(Protocol):
+class LegacyWebSocket(Protocol):
     def __init__(self, sockets):
         self.sockets = sockets
         self.user = {}
@@ -172,7 +170,7 @@ class WebSocketFactory(Factory):
         self.sockets = {}
 
     def buildProtocol(self, addr):
-        return WebSocket(self.sockets)
+        return LegacyWebSocket(self.sockets)
 
 
 def main(_queue, _from_client_queue):
@@ -185,5 +183,3 @@ def main(_queue, _from_client_queue):
     reactor.run(installSignalHandlers=False)
 
 
-if __name__ == '__main__':
-    main()

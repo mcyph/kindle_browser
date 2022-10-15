@@ -21,33 +21,28 @@
 #    Suite 330,
 #    Boston, MA 02111-1307 USA
 
-
-# Python 2/3 compatibility.
-from __future__ import print_function
-
-import base64
-import time
-import sys
 import os
-import subprocess
-import threading
-from queue import Queue
+import sys
 
 # Change path so we find Xlib
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 
-from Xlib import display, X, Xutil
-
+import time
+import threading
+import traceback
+import subprocess
 try:
     import thread
 except ModuleNotFoundError:
     import _thread as thread
-
-from Xlib.ext import damage
 from PIL import Image
-import traceback
-from x_motion_change_events import run_motion_change_event_listener
-import gzip
+from PIL import ImageChops
+from Xlib.ext import damage
+from Xlib import display, X, Xutil
+
+from src.ScreenStateContext import ScreenStateContext
+from src.process_image_for_output import process_image_for_output
+from src.x_motion_events import run_motion_change_event_listener
 
 
 def get_image_from_win(win, pt_w, pt_h, pt_x=0, pt_y=0):
@@ -74,10 +69,6 @@ def check_ext(disp):
 
 
 def send_if_changed(win, to_client_queue):
-    from PIL import ImageChops
-    from ScreenStateContext import ScreenStateContext
-    from process_image_for_output import process_image_for_output
-
     x1, y1, x2, y2 = ScreenStateContext.dirty_rect
     image = get_image_from_win(win, x2-x1, y2-y1, x1, y1)
     if not image:
@@ -121,8 +112,6 @@ def send_if_changed(win, to_client_queue):
 
 
 def _image_changed_thread(win, to_client_queue):
-    from ScreenStateContext import ScreenStateContext
-
     while True:
         #x, y, width, height = q_image_changed.get()
         #ScreenStateContext.add_to_dirty_rect(x, y, x+width, y+height)
@@ -179,7 +168,6 @@ def main(to_client_queue, pid):
             if event.count == 0:
                 pass
         elif event.type == d.extension_event.DamageNotify:
-            from ScreenStateContext import ScreenStateContext
             ScreenStateContext.add_to_dirty_rect(event.area.x,
                                                  event.area.y,
                                                  event.area.width + event.area.x,

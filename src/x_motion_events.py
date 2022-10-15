@@ -34,14 +34,16 @@ import os
 import sys
 import time
 import threading
+from queue import Queue
 
 # Change path so we find Xlib
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 
 from Xlib import X, XK, display
 from Xlib.ext import record
 from Xlib.protocol import rq
-from queue import Queue
+
+from src.ScreenStateContext import ScreenStateContext
 
 
 local_dpy = display.Display()
@@ -50,8 +52,6 @@ q = Queue()
 
 
 def _check_queue(to_client_queue):
-    from ScreenStateContext import ScreenStateContext
-
     while True:
         event = q.get()
         while not q.empty():
@@ -69,10 +69,8 @@ def _check_queue(to_client_queue):
 
 
 def run_motion_change_event_listener(to_client_queue):
-    from ScreenStateContext import ScreenStateContext
-    from process_image_for_output import process_image_for_output
-
-    t = threading.Thread(target=_check_queue, args=[to_client_queue])
+    t = threading.Thread(target=_check_queue,
+                         args=[to_client_queue])
     t.start()
 
     def record_callback(reply):

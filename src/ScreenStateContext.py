@@ -1,5 +1,5 @@
-from PIL import Image
 import _thread
+from PIL import Image
 
 
 class _ScreenStateContext:

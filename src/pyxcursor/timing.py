@@ -30,7 +30,7 @@ def timer(func):
         return value
     return wrapper_timer
 
-from pyxcursor import Xcursor
+from src.pyxcursor import Xcursor
 
 @timer
 def init(): 
