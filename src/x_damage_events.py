@@ -47,7 +47,7 @@ from src.x_motion_events import run_motion_change_event_listener
 
 
 def get_image_from_win(win, pt_w, pt_h, pt_x=0, pt_y=0):
-    print(pt_w, pt_h, pt_x, pt_y)
+    #print(pt_w, pt_h, pt_x, pt_y)
     try:
         raw = win.get_image(pt_x, pt_y, pt_w, pt_h, X.ZPixmap, 0xffffffff)
         image = Image.frombytes("RGB", (pt_w, pt_h), raw.data, "raw", "BGRX")
@@ -76,18 +76,20 @@ def send_if_changed(win, to_client_queue):
         ScreenStateContext.reset_dirty_rect()
         return
 
-    if image.size == ScreenStateContext.background.size:
-        diff = ImageChops.difference(image.convert('L', dither=Image.NONE),
-                                     ScreenStateContext.background.convert('L', dither=Image.NONE))
-    else:
-        diff = ImageChops.difference(image.convert('L', dither=Image.NONE),
-                                     ScreenStateContext.background.crop(
-                                         (x1, y1, x2, y2)).convert('L', dither=Image.NONE))
+    if False:
+        # TODO: Benchmark this code!
+        if image.size == ScreenStateContext.background.size:
+            diff = ImageChops.difference(image.convert('L', dither=Image.NONE),
+                                         ScreenStateContext.background.convert('L', dither=Image.NONE))
+        else:
+            diff = ImageChops.difference(image.convert('L', dither=Image.NONE),
+                                         ScreenStateContext.background.crop(
+                                             (x1, y1, x2, y2)).convert('L', dither=Image.NONE))
 
-    if not diff.getbbox():
-        print("IGNORING BECAUSE NOT DIFFERENT ENOUGH: CONDITION 1")
-        ScreenStateContext.reset_dirty_rect()
-        return
+        if not diff.getbbox():
+            print("IGNORING BECAUSE NOT DIFFERENT ENOUGH: CONDITION 1")
+            ScreenStateContext.reset_dirty_rect()
+            return
 
     # elif len(list(i for i in diff.getdata() if i)) < 10:
     #    print("IGNORING BECAUSE NOT DIFFERENT ENOUGH: CONDITION 2", set(diff.getdata()))
@@ -115,10 +117,15 @@ def _image_changed_thread(win, to_client_queue):
         #x, y, width, height = q_image_changed.get()
         #ScreenStateContext.add_to_dirty_rect(x, y, x+width, y+height)
 
-        with ScreenStateContext.lock:
-            if ScreenStateContext.ready_for_send and ScreenStateContext.dirty_rect:
-                print("SENDING:", ScreenStateContext.ready_for_send, ScreenStateContext.dirty_rect)
-                send_if_changed(win, to_client_queue)
+        try:
+            with ScreenStateContext.lock:
+                if ScreenStateContext.ready_for_send and ScreenStateContext.dirty_rect:
+                    #print("SENDING:", ScreenStateContext.ready_for_send, ScreenStateContext.dirty_rect)
+                    send_if_changed(win, to_client_queue)
+        except:
+            import traceback
+            traceback.print_exc()
+
         time.sleep(0.1)
 
 
@@ -161,18 +168,23 @@ def main(to_client_queue, pid):
     #t.start()
 
     while 1:
-        event = d.next_event()
-        #print("EVENT:", event)
-        if event.type == X.Expose:
-            if event.count == 0:
-                pass
-        elif event.type == d.extension_event.DamageNotify:
-            ScreenStateContext.add_to_dirty_rect(event.area.x,
-                                                 event.area.y,
-                                                 event.area.width + event.area.x,
-                                                 event.area.height + event.area.y)
-        elif event.type == X.DestroyNotify:
-            sys.exit(0)
-        else:
-            print(f"WARNING: Unknown event type: {event.type}")
+        try:
+            event = d.next_event()
+            #print("EVENT:", event)
+            if event.type == X.Expose:
+                if event.count == 0:
+                    pass
+            elif event.type == d.extension_event.DamageNotify:
+                ScreenStateContext.add_to_dirty_rect(event.area.x,
+                                                     event.area.y,
+                                                     event.area.width + event.area.x,
+                                                     event.area.height + event.area.y)
+            elif event.type == X.DestroyNotify:
+                sys.exit(0)
+            else:
+                print(f"WARNING: Unknown event type: {event.type}")
+        except:
+            import traceback
+            traceback.print_exc()
+            time.sleep(0.3)
 
