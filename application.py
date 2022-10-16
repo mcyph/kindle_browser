@@ -185,7 +185,7 @@ def main():
 
     #system("DISPLAY=:2 onboard &")
     system(f"DISPLAY=:2 matchbox-window-manager &")
-    system(f"DISPLAY=:2 firefox -P Xephyr -width {ScreenStateContext.screen_x} -height {ScreenStateContext.screen_y} &")
+    system(f"DISPLAY=:2 chromium-browser -P Xephyr -width {ScreenStateContext.screen_x} -height {ScreenStateContext.screen_y} &")
 
     #loop = asyncio.get_event_loop()
     app = aiohttp.web.Application()
