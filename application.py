@@ -150,16 +150,17 @@ thread.start()
 
 def main():
     proc = subprocess.Popen([
-        'Xnest',
+        'Xephyr',
+        #'Xnest',
         '-br', '-render', 'gray', '-dpi', '400',
         '-br', '-ac', '-noreset',
         #'-glamor',
         #'-keybd', ',,,xkbmodel=evdev,xkblayout=de', #'-mouse',
 
         #'-depth', '24',
-        '-geometry', f'{ScreenStateContext.screen_x}x{ScreenStateContext.screen_y}',
+        #'-geometry', f'{ScreenStateContext.screen_x}x{ScreenStateContext.screen_y}',
 
-        #'-screen', f'{ScreenStateContext.screen_x}x{ScreenStateContext.screen_y}x16',
+        '-screen', f'{ScreenStateContext.screen_x}x{ScreenStateContext.screen_y}x16',
         ':2',
     ], shell=False)
     pid = proc.pid

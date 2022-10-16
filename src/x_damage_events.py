@@ -139,8 +139,8 @@ def main(to_client_queue, pid):
 
     window1_x_id = int(subprocess.check_output(['xdotool', 'search', '--any',
                                                 '--pid', str(pid),
-                                                '--name', 'Xnest',
-                                                #'Xephyr on :2.0'
+                                                '--name', #'Xnest',
+                                                'Xephyr on :2.0'
                                                 ]).decode('ascii').strip().split('\n')[-1])
 
     window1 = d.create_resource_object('window', window1_x_id)
