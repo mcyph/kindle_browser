@@ -1,10 +1,11 @@
 import numpy
+import array
 from PIL import Image
 from numba import jit, u8
 from numba.typed import List
 
 
-@jit(nopython=True,
+@jit(forceobj=True,  # WARNING!
      locals={'current_item': u8,
              'current_count': u8,
              'DIVISOR': u8,
@@ -14,7 +15,7 @@ def run_length_encode(in_array):
     # May as well reserve values from a certain number for single items
     SINGLE_VALUES_FROM = (255 // DIVISOR) + 1
 
-    out_array = List.empty_list(u8)
+    out_array = bytearray()
     current_item = 255
     current_count = 0
 
@@ -63,6 +64,6 @@ if __name__ == '__main__':
     TEST_DATA_NP_EXTENDED = numpy.array(TEST_DATA*100, dtype=numpy.uint8)
     print(run_length_encode(TEST_DATA_NP))
 
-    #for x in range(10000):
-    #    print(run_length_encode(TEST_DATA_NP_EXTENDED))
+    for x in range(10000):
+        run_length_encode(TEST_DATA_NP_EXTENDED)
     print("DONE!")

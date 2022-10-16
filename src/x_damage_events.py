@@ -106,9 +106,6 @@ def send_if_changed(win, to_client_queue):
     with Timer('send_if_changed process_image_for_output'):
         img_data = process_image_for_output(img)
 
-    with Timer('send_if_changed to bytes'):
-        img_data = bytes(img_data)
-
     with Timer('send_if_changed b64encode'):
         img_data = base64.b64encode(img_data)
 
