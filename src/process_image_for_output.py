@@ -1,23 +1,24 @@
 import numpy
 import array
 from PIL import Image
-from numba import jit, u8
+from numba import jit, uint, uint32
 from numba.typed import List
 
 
-@jit(forceobj=True,  # WARNING!
-     locals={'current_item': u8,
-             'current_count': u8,
-             'DIVISOR': u8,
-             'SINGLE_VALUES_FROM': u8})
-def run_length_encode(in_array):
+@jit(nopython=True,
+     locals={'current_item': uint,
+             'current_count': uint,
+             'DIVISOR': uint,
+             'SINGLE_VALUES_FROM': uint,
+             'y': uint32})
+def run_length_encode(out_array, in_array):
     DIVISOR = 64  # = 4 individual shades
     # May as well reserve values from a certain number for single items
     SINGLE_VALUES_FROM = (255 // DIVISOR) + 1
 
-    out_array = bytearray()
     current_item = 255
     current_count = 0
+    y = 0
 
     for x in range(in_array.shape[0]):
         item = in_array[x] // DIVISOR  # Note double-division here!
@@ -31,29 +32,37 @@ def run_length_encode(in_array):
             current_count = 1
         else:
             if current_count == 1:
-                out_array.append(SINGLE_VALUES_FROM + current_item)
+                out_array[y] = SINGLE_VALUES_FROM + current_item
+                y += 1
             else:
-                out_array.append(current_item)
-                out_array.append(current_count)
+                out_array[y] = current_item
+                y += 1
+                out_array[y] = current_count
+                y += 1
 
             current_item = item
             current_count = 1
 
     if current_item != 255:
         if current_count == 1:
-            out_array.append(SINGLE_VALUES_FROM + current_item)
+            out_array[y] = SINGLE_VALUES_FROM + current_item
+            y += 1
         else:
-            out_array.append(current_item)
-            out_array.append(current_count)
+            out_array[y] = current_item
+            y += 1
+            out_array[y] = current_count
+            y += 1
 
-    return out_array
+    return y-1
 
 
 def process_image_for_output(image: Image):
     print("Processing image for output...", end='')
     print("IMAGE SIZE:", image.size)
     data = numpy.asarray(image.convert('L', dither=Image.NONE)).flatten()
-    data = run_length_encode(data)
+    out_array = numpy.ndarray(shape=(data[0]*2), dtype=numpy.uint8)
+    to_len = run_length_encode(out_array, data)
+    data = out_array[:to_len].asbytes()
     print(' [Done]')
     return data
 
@@ -62,8 +71,11 @@ if __name__ == '__main__':
     TEST_DATA = [22, 22, 22, 22, 55, 55, 55, 100, 0, 200, 0, 0]
     TEST_DATA_NP = numpy.array(TEST_DATA, dtype=numpy.uint8)
     TEST_DATA_NP_EXTENDED = numpy.array(TEST_DATA*100, dtype=numpy.uint8)
-    print(run_length_encode(TEST_DATA_NP))
+
+    out_array = numpy.ndarray(shape=(len(TEST_DATA) * 2,), dtype=numpy.uint8)
+    print(run_length_encode(out_array, TEST_DATA_NP))
 
     for x in range(10000):
-        run_length_encode(TEST_DATA_NP_EXTENDED)
+        out_array = numpy.ndarray(shape=(len(TEST_DATA_NP_EXTENDED) * 2,), dtype=numpy.uint8)
+        run_length_encode(out_array, TEST_DATA_NP_EXTENDED)
     print("DONE!")
