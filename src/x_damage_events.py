@@ -100,9 +100,14 @@ def send_if_changed(win, to_client_queue):
     with Timer('send_if_changed paste'):
         ScreenStateContext.paste(image, x1, y1)
 
-    with Timer('send_if_changed crop and process'):
+    with Timer('send_if_changed crop'):
         img = ScreenStateContext.background.crop(ScreenStateContext.dirty_rect)
-        img_data = base64.b64encode(bytes(process_image_for_output(img))).decode('ascii')
+
+    with Timer('send_if_changed process_image_for_output'):
+        img_data = process_image_for_output(img)
+
+    with Timer('send_if_changed b64encode'):
+        img_data = base64.b64encode(bytes(img_data)).decode('ascii')
 
     with Timer('send_if_changed put'):
         to_client_queue.put({
