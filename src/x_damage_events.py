@@ -201,7 +201,7 @@ def main(to_client_queue, pid):
                     sys.exit(0)
                 else:
                     print(f"WARNING: Unknown event type: {event.type}")
-            time.sleep(0.2)
+            #time.sleep(0.2)
         except:
             import traceback
             traceback.print_exc()
