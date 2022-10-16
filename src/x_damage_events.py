@@ -41,6 +41,7 @@ from PIL import ImageChops
 from Xlib.ext import damage
 from Xlib import display, X, Xutil
 
+from src.Timer import Timer
 from src.ScreenStateContext import ScreenStateContext
 from src.process_image_for_output import process_image_for_output
 from src.x_motion_events import run_motion_change_event_listener
@@ -70,11 +71,12 @@ def check_ext(disp):
 
 
 def send_if_changed(win, to_client_queue):
-    x1, y1, x2, y2 = ScreenStateContext.dirty_rect
-    image = get_image_from_win(win, x2-x1, y2-y1, x1, y1)
-    if not image:
-        ScreenStateContext.reset_dirty_rect()
-        return
+    with Timer('send_if_changed get_image_from_win'):
+        x1, y1, x2, y2 = ScreenStateContext.dirty_rect
+        image = get_image_from_win(win, x2-x1, y2-y1, x1, y1)
+        if not image:
+            ScreenStateContext.reset_dirty_rect()
+            return
 
     if False:
         # TODO: Benchmark this code!
@@ -95,19 +97,25 @@ def send_if_changed(win, to_client_queue):
     #    print("IGNORING BECAUSE NOT DIFFERENT ENOUGH: CONDITION 2", set(diff.getdata()))
     #    continue
 
-    ScreenStateContext.paste(image, x1, y1)
+    with Timer('send_if_changed paste'):
+        ScreenStateContext.paste(image, x1, y1)
 
-    img = ScreenStateContext.background.crop(ScreenStateContext.dirty_rect)
-    to_client_queue.put({
-        'type': 'image',
-        #'imageData': base64.b64encode(gzip.compress(json.dumps(process_image_for_output(
-        #    ScreenStateContext.background.crop(ScreenStateContext.dirty_rect))).encode('ascii'))).decode('ascii'),
-        'imageData': base64.b64encode(bytes(process_image_for_output(img))).decode('ascii'),
-        'left': ScreenStateContext.dirty_rect[0],
-        'top': ScreenStateContext.dirty_rect[1],
-        'width': img.size[0],
-        'height': img.size[1],
-    })
+    with Timer('send_if_changed crop and process'):
+        img = ScreenStateContext.background.crop(ScreenStateContext.dirty_rect)
+        img_data = base64.b64encode(bytes(process_image_for_output(img))).decode('ascii')
+
+    with Timer('send_if_changed put'):
+        to_client_queue.put({
+            'type': 'image',
+            #'imageData': base64.b64encode(gzip.compress(json.dumps(process_image_for_output(
+            #    ScreenStateContext.background.crop(ScreenStateContext.dirty_rect))).encode('ascii'))).decode('ascii'),
+            'imageData': img_data,
+            'left': ScreenStateContext.dirty_rect[0],
+            'top': ScreenStateContext.dirty_rect[1],
+            'width': img.size[0],
+            'height': img.size[1],
+        })
+
     ScreenStateContext.reset_dirty_rect()
     ScreenStateContext.ready_for_send = False
 
@@ -126,7 +134,7 @@ def _image_changed_thread(win, to_client_queue):
             import traceback
             traceback.print_exc()
 
-        time.sleep(0.1)
+        time.sleep(0.3)
 
 
 #def _send_full_repaints_thread(to_client_queue, window1):
@@ -169,20 +177,22 @@ def main(to_client_queue, pid):
 
     while 1:
         try:
-            event = d.next_event()
-            #print("EVENT:", event)
-            if event.type == X.Expose:
-                if event.count == 0:
-                    pass
-            elif event.type == d.extension_event.DamageNotify:
-                ScreenStateContext.add_to_dirty_rect(event.area.x,
-                                                     event.area.y,
-                                                     event.area.width + event.area.x,
-                                                     event.area.height + event.area.y)
-            elif event.type == X.DestroyNotify:
-                sys.exit(0)
-            else:
-                print(f"WARNING: Unknown event type: {event.type}")
+            with Timer('xdamage event'):
+                event = d.next_event()
+                #print("EVENT:", event)
+                if event.type == X.Expose:
+                    if event.count == 0:
+                        pass
+                elif event.type == d.extension_event.DamageNotify:
+                    ScreenStateContext.add_to_dirty_rect(event.area.x,
+                                                         event.area.y,
+                                                         event.area.width + event.area.x,
+                                                         event.area.height + event.area.y)
+                elif event.type == X.DestroyNotify:
+                    sys.exit(0)
+                else:
+                    print(f"WARNING: Unknown event type: {event.type}")
+            time.sleep(0.2)
         except:
             import traceback
             traceback.print_exc()
