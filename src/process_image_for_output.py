@@ -6,6 +6,7 @@ from numba.typed import List
 
 
 @jit(nopython=True,
+     signature_or_function=uint[:](uint[:], uint[:]),
      locals={'current_item': uint,
              'current_count': uint,
              'DIVISOR': uint,
