@@ -156,7 +156,7 @@ const startListener = function() {
         var y = 0;
         var total = 0;
         var darkness, runsFor;
-        var rleData = data.imageData;
+        var rleData = atob(data.imageData);
         var width = data.width;
         var height = data.height;
         var SINGLE_VALUES_FROM = Math.floor((255 / DIVISOR)) + 1;
@@ -181,13 +181,13 @@ const startListener = function() {
 
         try {
             for (var i=0; i<rleData.length; i++) {
-                var j = rleData[i];
+                var j = rleData.charCodeAt(i);
                 if (j >= SINGLE_VALUES_FROM) {
                     darkness = j - SINGLE_VALUES_FROM;
                     runsFor = 1;
                 } else {
                     darkness = j;
-                    runsFor = rleData[i+1];
+                    runsFor = rleData.charCodeAt(i+1);
                     i += 1;
                 }
                 total += runsFor;

@@ -28,6 +28,7 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 
 import time
+import base64
 import threading
 import traceback
 import subprocess
@@ -93,15 +94,13 @@ def send_if_changed(win, to_client_queue):
     #    continue
 
     ScreenStateContext.paste(image, x1, y1)
-    import json
-    import zlib
 
     img = ScreenStateContext.background.crop(ScreenStateContext.dirty_rect)
     to_client_queue.put({
         'type': 'image',
         #'imageData': base64.b64encode(gzip.compress(json.dumps(process_image_for_output(
         #    ScreenStateContext.background.crop(ScreenStateContext.dirty_rect))).encode('ascii'))).decode('ascii'),
-        'imageData': list(process_image_for_output(img)),
+        'imageData': base64.b64encode(bytes(process_image_for_output(img))).decode('ascii'),
         'left': ScreenStateContext.dirty_rect[0],
         'top': ScreenStateContext.dirty_rect[1],
         'width': img.size[0],

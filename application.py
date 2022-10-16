@@ -152,10 +152,14 @@ def main():
     proc = subprocess.Popen([
         'Xephyr',
         #'Xnest',
-        '-br', '-render', 'gray', '-dpi', '400',
-        '-br', '-ac', '-noreset',
+        '-br',
+        '-render', 'gray',
+        '-dpi', '400',
+        '-ac',
+        '-noreset',
         #'-glamor',
-        #'-keybd', ',,,xkbmodel=evdev,xkblayout=de', #'-mouse',
+        #'-keybd', ',,,xkbmodel=evdev,xkblayout=de',
+        #'-mouse',
 
         #'-depth', '24',
         #'-geometry', f'{ScreenStateContext.screen_x}x{ScreenStateContext.screen_y}',
@@ -181,7 +185,7 @@ def main():
 
     #system("DISPLAY=:2 onboard &")
     system(f"DISPLAY=:2 matchbox-window-manager &")
-    system(f"DISPLAY=:2 firefox -P Xephyr -width {ScreenStateContext.screen_x} -height {ScreenStateContext.screen_y} &")
+    system(f"DISPLAY=:2 chromium-browser -P Xephyr -width {ScreenStateContext.screen_x} -height {ScreenStateContext.screen_y} &")
 
     #loop = asyncio.get_event_loop()
     app = aiohttp.web.Application()
