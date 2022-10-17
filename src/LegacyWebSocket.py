@@ -12,10 +12,11 @@ connections = {}
 
 
 class LegacyWebSocket(Protocol):
-    def __init__(self, sockets, queue, cursor_queue):
+    def __init__(self, sockets, queue, cursor_queue, from_client_queue):
         self.sockets = sockets
         self.queue = queue
         self.cursor_queue = cursor_queue
+        self.from_client_queue = from_client_queue
         self.user = {}
         self.lock = allocate_lock()
 
@@ -183,7 +184,7 @@ class WebSocketFactory(Factory):
         self.from_client_queue = from_client_queue
 
     def buildProtocol(self, addr):
-        return LegacyWebSocket(self.sockets, self.queue, self.cursor_queue)
+        return LegacyWebSocket(self.sockets, self.queue, self.cursor_queue, self.from_client_queue)
 
 
 def main(queue, cursor_queue, from_client_queue):
