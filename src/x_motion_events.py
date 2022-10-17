@@ -57,15 +57,15 @@ def _check_queue(to_client_queue):
             event = q.get()
             while not q.empty():
                 event = q.get()
-            with ScreenStateContext.lock:
-                #print("MotionNotify send", event.root_x, event.root_y)
-                to_client_queue.put({
-                    'type': 'cursor_move',
-                    'absolute_x': event.root_x,
-                    'absolute_y': event.root_y,
-                    'relative_x': event.root_x,
-                    'relative_y': event.root_y,
-                })
+            #with ScreenStateContext.lock:
+            #print("MotionNotify send", event.root_x, event.root_y)
+            to_client_queue.put({
+                'type': 'cursor_move',
+                'absolute_x': event.root_x,
+                'absolute_y': event.root_y,
+                'relative_x': event.root_x,
+                'relative_y': event.root_y,
+            })
         except:
             import traceback
             traceback.print_exc()

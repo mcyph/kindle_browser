@@ -41,7 +41,7 @@ class Timer:
         self._start_time = None
 
         # Report elapsed time
-        if self.logger and False:
+        if self.logger and True:
             self.logger(self.identifier+': '+self.text.format(elapsed_time))
         if self.name:
             self.timers[self.name] += elapsed_time
