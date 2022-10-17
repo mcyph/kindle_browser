@@ -187,20 +187,20 @@ def main(to_client_queue, pid):
         try:
             event = d.next_event()
 
-            with Timer('xdamage event'):
-                #print("EVENT:", event)
-                if event.type == X.Expose:
-                    if event.count == 0:
-                        pass
-                elif event.type == d.extension_event.DamageNotify:
-                    ScreenStateContext.add_to_dirty_rect(event.area.x,
-                                                         event.area.y,
-                                                         event.area.width + event.area.x,
-                                                         event.area.height + event.area.y)
-                elif event.type == X.DestroyNotify:
-                    sys.exit(0)
-                else:
-                    print(f"WARNING: Unknown event type: {event.type}")
+            #with Timer('xdamage event'):
+            #print("EVENT:", event)
+            if event.type == X.Expose:
+                if event.count == 0:
+                    pass
+            elif event.type == d.extension_event.DamageNotify:
+                ScreenStateContext.add_to_dirty_rect(event.area.x,
+                                                     event.area.y,
+                                                     event.area.width + event.area.x,
+                                                     event.area.height + event.area.y)
+            elif event.type == X.DestroyNotify:
+                sys.exit(0)
+            else:
+                print(f"WARNING: Unknown event type: {event.type}")
             #time.sleep(0.2)
         except:
             import traceback
