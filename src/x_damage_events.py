@@ -223,7 +223,7 @@ def main(to_client_queue, to_client_cursor_queue, pid):
                 old_window1 = window1
                 old_d = d
                 window1, d = get_display()
-                old_window1.destroy()
+                #old_window1.destroy()
                 old_d.close()
 
             start_time = time.time()
