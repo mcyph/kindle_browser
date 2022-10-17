@@ -45,7 +45,7 @@ class LegacyWebSocket(Protocol):
                     reactor.callLater(0.05, self.loop)
     
     def loop(self):
-        if 'wsCursor' in self.sockets[self]['headers'][b'Location']:
+        if b'wsCursor' in self.sockets[self]['headers'][b'Location']:
             queue = self.cursor_queue
         else:
             queue = self.queue
