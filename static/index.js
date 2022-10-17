@@ -118,9 +118,7 @@ const startListener = function() {
         setMessage("ERROR " + code + e);
     };
 
-    wsCursorConn.onopen = function() {
-        alert("OPEN!")
-    };
+    wsCursorConn.onopen = function() {};
     wsCursorConn.onclose = function(e) {};
     wsCursorConn.onerror = function(e, code) {};
 
@@ -143,7 +141,6 @@ const startListener = function() {
 
     wsCursorConn.onmessage = function(message) {
         var data = JSON.parse(message.data);
-        alert(data);
 
         var useCursorId = ++cursorId;
         setTimeout(function () {
