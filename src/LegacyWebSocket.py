@@ -30,6 +30,8 @@ class LegacyWebSocket(Protocol):
         
         if msg.lower().find(b'upgrade: websocket') != -1:
             self.hand_shake(msg)
+            print("CALLING FIRST TIME LOOP")
+            reactor.callLater(0.05, self.loop)
         else:
             for i_msg in msg.split(b'\xff'):
                 if not i_msg:
@@ -37,13 +39,9 @@ class LegacyWebSocket(Protocol):
                 elif i_msg[0] == ord(b'\x00'):
                     i_msg = i_msg[1:]
 
-                if i_msg.startswith(b'{'):
-                    command = json.loads(i_msg.decode('utf-8'))
-                    from_client_queue.put(command)
-                else:
-                    print("CALLING FIRST TIME LOOP", i_msg)
-                    reactor.callLater(0.05, self.loop)
-    
+                command = json.loads(i_msg.decode('utf-8'))
+                self.from_client_queue.put(command)
+
     def loop(self):
         if b'wsCursor' in self.sockets[self]['headers'][b'Location']:
             queue = self.cursor_queue
@@ -178,20 +176,19 @@ Sec-WebSocket-Accept: %s\r\n\r\n' % (token)
 
 
 class WebSocketFactory(Factory):
-    def __init__(self):
+    def __init__(self, queue, cursor_queue, from_client_queue):
         self.sockets = {}
+        self.queue = queue
+        self.cursor_queue = cursor_queue
+        self.from_client_queue = from_client_queue
 
     def buildProtocol(self, addr):
-        return LegacyWebSocket(self.sockets, queue, cursor_queue)
+        return LegacyWebSocket(self.sockets, self.queue, self.cursor_queue)
 
 
-def main(_queue, _cursor_queue, _from_client_queue):
-    global queue, cursor_queue, from_client_queue
-    queue = _queue
-    cursor_queue = _cursor_queue
-    from_client_queue = _from_client_queue
+def main(queue, cursor_queue, from_client_queue):
     port = 8080
-    reactor.listenTCP(port, WebSocketFactory())
+    reactor.listenTCP(port, WebSocketFactory(queue, cursor_queue, from_client_queue))
     print("listen", '192.168.1.196:' + str(port))
     reactor.run(installSignalHandlers=False)
 

@@ -107,7 +107,7 @@ const startListener = function() {
 
     wsConn.onopen = function() {
         setMessage("");
-        wsConn.send('firstData!');
+        //wsConn.send('firstData!');
         sendJSON({ type: 'command', command: 'initialFrame' });
     };
     wsConn.onclose = function(e) {
