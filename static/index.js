@@ -25,8 +25,6 @@ const startListener = function() {
     var topEl = document.getElementById('topEl');
     var inputDummy = document.getElementById('input_dummy');
     var chromiumCanvas = document.getElementById('chromiumCanvas');
-    var wsConn = new WebSocket('ws://' + window.location.hostname + ":8080/ws");
-    var wsCursorConn = new WebSocket('ws://' + window.location.hostname + ":8080/wsCursor");
 
     var ctx = chromiumCanvas.getContext('2d');
 
@@ -105,23 +103,6 @@ const startListener = function() {
         messageDiv.innerHTML = message;
     };
 
-    wsConn.onopen = function() {
-        setMessage("");
-        //wsConn.send('firstData!');
-        sendJSON({ type: 'command', command: 'initialFrame' });
-    };
-    wsConn.onclose = function(e) {
-        setMessage("Disconn. " + JSON.stringify(e));
-        active = false;
-    };
-    wsConn.onerror = function(e, code) {
-        setMessage("ERROR " + code + e);
-    };
-
-    wsCursorConn.onopen = function() {};
-    wsCursorConn.onclose = function(e) {};
-    wsCursorConn.onerror = function(e, code) {};
-
     var lineData = [];
     var DIVISOR = 32;
 
@@ -139,91 +120,116 @@ const startListener = function() {
     var cursorId = 0;
     //ctx.scale(TIMES_BY, TIMES_BY);
 
-    wsCursorConn.onmessage = function(message) {
-        var data = JSON.parse(message.data);
+    for (var __=0; __<4; __++) {
+        var wsConn = new WebSocket('ws://' + window.location.hostname + ":8080/ws");
+        var wsCursorConn = new WebSocket('ws://' + window.location.hostname + ":8080/wsCursor");
 
-        var useCursorId = ++cursorId;
-        setTimeout(function () {
-            if (cursorId !== useCursorId) {
-                return;
-            }
-            var cursor = document.getElementById('cursor');
-            data['relative_y'] -= 30; // HACK!
-            data['relative_x'] -= 5; // HACK!
-            cursor.style.left = data['relative_x'] * TIMES_BY + 'px';
-            cursor.style.top = data['relative_y'] * TIMES_BY + 'px';
-        }, 0);
-        return;
-    };
-
-    wsConn.onmessage = function(message) {
-        var data = JSON.parse(message.data);
-
-        var x = 0;
-        var y = 0;
-        var total = 0;
-        var darkness, runsFor;
-        var rleData = atob(data.imageData);
-        var width = data.width;
-        var height = data.height;
-        var SINGLE_VALUES_FROM = Math.floor((255 / DIVISOR)) + 1;
-
-        //alert(!rleData || rleData.length)
-
-        var drawFor = function(darkness, amount) {
-            try {
-                ctx.putImageData(
-                    lineData[darkness],
-                    Math.ceil((data.left + x) * TIMES_BY),
-                    Math.ceil((data.top + y) * TIMES_BY),
-                    0, 0,
-                    Math.ceil(TIMES_BY * amount),
-                    Math.ceil(TIMES_BY)
-                );
-            } catch (e) {
-                alert("ERROR DRAWFOR: "+darkness+" "+amount+" "+lineData.length+" "+lineData[darkness]);
-                throw e;
-            }
+        wsConn.onopen = function () {
+            setMessage("");
+            //wsConn.send('firstData!');
+            sendJSON({type: 'command', command: 'initialFrame'});
+        };
+        wsConn.onclose = function (e) {
+            setMessage("Disconn. " + JSON.stringify(e));
+            active = false;
+        };
+        wsConn.onerror = function (e, code) {
+            setMessage("ERROR " + code + e);
         };
 
-        try {
-            for (var i=0; i<rleData.length; i++) {
-                var j = rleData.charCodeAt(i);
-                if (j >= SINGLE_VALUES_FROM) {
-                    darkness = j - SINGLE_VALUES_FROM;
-                    runsFor = 1;
-                } else {
-                    darkness = j;
-                    runsFor = rleData.charCodeAt(i+1);
-                    i += 1;
-                }
-                total += runsFor;
+        wsCursorConn.onopen = function () {
+        };
+        wsCursorConn.onclose = function (e) {
+        };
+        wsCursorConn.onerror = function (e, code) {
+        };
 
-                while ((x+runsFor) > width) {
-                    // Goes to next line
-                    var toEndOfLine = width-x;
-                    if (toEndOfLine) {
-                        drawFor(darkness, toEndOfLine);
-                        x += toEndOfLine;
+        wsCursorConn.onmessage = function (message) {
+            var data = JSON.parse(message.data);
+
+            var useCursorId = ++cursorId;
+            setTimeout(function () {
+                if (cursorId !== useCursorId) {
+                    return;
+                }
+                var cursor = document.getElementById('cursor');
+                data['relative_y'] -= 30; // HACK!
+                data['relative_x'] -= 5; // HACK!
+                cursor.style.left = data['relative_x'] * TIMES_BY + 'px';
+                cursor.style.top = data['relative_y'] * TIMES_BY + 'px';
+            }, 0);
+            return;
+        };
+
+        wsConn.onmessage = function (message) {
+            var data = JSON.parse(message.data);
+
+            var x = 0;
+            var y = 0;
+            var total = 0;
+            var darkness, runsFor;
+            var rleData = atob(data.imageData);
+            var width = data.width;
+            var height = data.height;
+            var SINGLE_VALUES_FROM = Math.floor((255 / DIVISOR)) + 1;
+
+            //alert(!rleData || rleData.length)
+
+            var drawFor = function (darkness, amount) {
+                try {
+                    ctx.putImageData(
+                        lineData[darkness],
+                        Math.ceil((data.left + x) * TIMES_BY),
+                        Math.ceil((data.top + y) * TIMES_BY),
+                        0, 0,
+                        Math.ceil(TIMES_BY * amount),
+                        Math.ceil(TIMES_BY)
+                    );
+                } catch (e) {
+                    alert("ERROR DRAWFOR: " + darkness + " " + amount + " " + lineData.length + " " + lineData[darkness]);
+                    throw e;
+                }
+            };
+
+            try {
+                for (var i = 0; i < rleData.length; i++) {
+                    var j = rleData.charCodeAt(i);
+                    if (j >= SINGLE_VALUES_FROM) {
+                        darkness = j - SINGLE_VALUES_FROM;
+                        runsFor = 1;
+                    } else {
+                        darkness = j;
+                        runsFor = rleData.charCodeAt(i + 1);
+                        i += 1;
                     }
-                    runsFor -= toEndOfLine;
-                    y += 1;
-                    x = 0;
-                }
+                    total += runsFor;
 
-                if (runsFor) {
-                    // All on same line
-                    drawFor(darkness, runsFor);
-                    x += runsFor;
+                    while ((x + runsFor) > width) {
+                        // Goes to next line
+                        var toEndOfLine = width - x;
+                        if (toEndOfLine) {
+                            drawFor(darkness, toEndOfLine);
+                            x += toEndOfLine;
+                        }
+                        runsFor -= toEndOfLine;
+                        y += 1;
+                        x = 0;
+                    }
+
+                    if (runsFor) {
+                        // All on same line
+                        drawFor(darkness, runsFor);
+                        x += runsFor;
+                    }
                 }
+            } catch (e) {
+                setMessage("MSG ERROR: " + e + " " + e.lineNumber);
             }
-        } catch(e) {
-            setMessage("MSG ERROR: "+e+" "+e.lineNumber);
-        }
 
-        setTimeout(function() {
-            sendJSON({ type: 'command', command: 'readyForMore' });
-        }, 0);
+            setTimeout(function () {
+                sendJSON({type: 'command', command: 'readyForMore'});
+            }, 0);
+        }
     }
 }
 
