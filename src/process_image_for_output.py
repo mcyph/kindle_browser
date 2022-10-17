@@ -61,7 +61,7 @@ def run_length_encode(out_array, in_array, num_items):
 def process_image_for_output(image: Image):
     print("Processing image for output...", end='')
     #print("IMAGE SIZE:", image.size)
-    in_array = numpy.asarray(image.convert('L', dither=Image.NONE)).flatten()
+    in_array = numpy.asarray(image).flatten() # .convert('L', dither=Image.NONE)
     out_array = numpy.ndarray(shape=(in_array.shape[0]*2,),
                               dtype=numpy.uint8)
     y = run_length_encode(out_array, in_array, in_array.shape[0])
