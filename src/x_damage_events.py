@@ -210,7 +210,6 @@ def main(to_client_queue, pid):
                     sys.exit(0)
                 else:
                     print(f"WARNING: Unknown event type: {event.type}")
-                #time.sleep(0.2)
             except:
                 import traceback
                 traceback.print_exc()
@@ -220,5 +219,5 @@ def main(to_client_queue, pid):
             window1, d = get_display()
             start_time = time.time()
 
-        time.sleep(0.3)
+        time.sleep(0.1)
 
