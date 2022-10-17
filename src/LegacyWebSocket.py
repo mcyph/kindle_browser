@@ -3,6 +3,7 @@ import json
 import struct
 import base64
 import hashlib
+from _thread import allocate_lock
 from twisted.internet import reactor
 from twisted.internet.protocol import Factory, Protocol
 
@@ -14,6 +15,7 @@ class LegacyWebSocket(Protocol):
     def __init__(self, sockets):
         self.sockets = sockets
         self.user = {}
+        self.lock = allocate_lock()
 
     def connectionMade(self):
         if self not in self.sockets:
@@ -78,25 +80,26 @@ class LegacyWebSocket(Protocol):
 
     def send_data(self, raw_str):
         print("sending:", self)
-        
-        if self.sockets[self]['new_version']:
-            back_str = []
-            back_str.append(b'\x81')
-            data_length = len(raw_str)
+        with self.lock:
+            if self.sockets[self]['new_version']:
+                back_str = []
+                back_str.append(b'\x81')
+                data_length = len(raw_str)
 
-            if data_length <= 125:
-                back_str.append(bytes([data_length]))
+                if data_length <= 125:
+                    back_str.append(bytes([data_length]))
+                else:
+                    back_str.append(bytes([126]))
+                    back_str.append(bytes([data_length >> 8]))
+                    back_str.append(bytes([data_length & 0xFF]))
+
+                back_str = b"".join(back_str) + raw_str
+
+                self.transport.write(back_str)
             else:
-                back_str.append(bytes([126]))
-                back_str.append(bytes([data_length >> 8]))
-                back_str.append(bytes([data_length & 0xFF]))
-
-            back_str = b"".join(back_str) + raw_str
-
-            self.transport.write(back_str)
-        else:
-            back_str = b'\x00%s\xFF' % (raw_str)
-            self.transport.write(back_str)
+                back_str = b'\x00%s\xFF' % (raw_str)
+                self.transport.write(back_str)
+        print("send:", self)
 
     def parse_recv_data(self, msg):
         raw_str = ''
