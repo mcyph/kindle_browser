@@ -118,7 +118,9 @@ const startListener = function() {
         setMessage("ERROR " + code + e);
     };
 
-    wsCursorConn.onopen = function() {};
+    wsCursorConn.onopen = function() {
+        alert("OPEN!")
+    };
     wsCursorConn.onclose = function(e) {};
     wsCursorConn.onerror = function(e, code) {};
 
@@ -141,22 +143,21 @@ const startListener = function() {
 
     wsCursorConn.onmessage = function(message) {
         var data = JSON.parse(message.data);
+        alert(data);
 
-        if (data['type'] === 'cursor_move') {
-            var useCursorId = ++cursorId;
-            setTimeout(function () {
-                if (cursorId !== useCursorId) {
-                    return;
-                }
-                var cursor = document.getElementById('cursor');
-                data['relative_y'] -= 30; // HACK!
-                data['relative_x'] -= 5; // HACK!
-                cursor.style.left = data['relative_x'] * TIMES_BY + 'px';
-                cursor.style.top = data['relative_y'] * TIMES_BY + 'px';
-            }, 0);
-            return;
-        }
-    }
+        var useCursorId = ++cursorId;
+        setTimeout(function () {
+            if (cursorId !== useCursorId) {
+                return;
+            }
+            var cursor = document.getElementById('cursor');
+            data['relative_y'] -= 30; // HACK!
+            data['relative_x'] -= 5; // HACK!
+            cursor.style.left = data['relative_x'] * TIMES_BY + 'px';
+            cursor.style.top = data['relative_y'] * TIMES_BY + 'px';
+        }, 0);
+        return;
+    };
 
     wsConn.onmessage = function(message) {
         var data = JSON.parse(message.data);
