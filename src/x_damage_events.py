@@ -125,7 +125,7 @@ def send_if_changed(win, to_client_queue):
     ScreenStateContext.ready_for_send = False
 
 
-def _image_changed_thread(win, to_client_queue):
+def _image_changed_thread(to_client_queue):
     while True:
         #x, y, width, height = q_image_changed.get()
         #ScreenStateContext.add_to_dirty_rect(x, y, x+width, y+height)
@@ -134,7 +134,7 @@ def _image_changed_thread(win, to_client_queue):
             with ScreenStateContext.lock:
                 if ScreenStateContext.ready_for_send and ScreenStateContext.dirty_rect:
                     #print("SENDING:", ScreenStateContext.ready_for_send, ScreenStateContext.dirty_rect)
-                    send_if_changed(win, to_client_queue)
+                    send_if_changed(window1, to_client_queue)
                     print("FINISHED SENDING!")
         except:
             import traceback
@@ -154,6 +154,8 @@ def _image_changed_thread(win, to_client_queue):
 
 
 def main(to_client_queue, to_client_cursor_queue, pid):
+    global window1
+
     window1_x_id = int(subprocess.check_output(['xdotool', 'search', '--any',
                                                 '--pid', str(pid),
                                                 '--name',  # 'Xnest',
@@ -176,7 +178,7 @@ def main(to_client_queue, to_client_cursor_queue, pid):
     window1, d = get_display()
 
     t = threading.Thread(target=_image_changed_thread,
-                         args=[window1, to_client_queue])
+                         args=[to_client_queue])
     t.start()
 
     t = threading.Thread(target=run_motion_change_event_listener,
@@ -213,8 +215,11 @@ def main(to_client_queue, to_client_cursor_queue, pid):
 
         if time.time() - start_time > 3:
             # HACK: On raspberry pi it seems events stop working randomly
-            d.close()
+            old_window1 = window1
+            old_d = d
             window1, d = get_display()
+            old_window1.destroy()
+            old_d.close()
             start_time = time.time()
 
         time.sleep(0.1)
