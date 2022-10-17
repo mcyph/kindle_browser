@@ -138,6 +138,7 @@ def _image_changed_thread(win, to_client_queue):
                 if ScreenStateContext.ready_for_send and ScreenStateContext.dirty_rect:
                     #print("SENDING:", ScreenStateContext.ready_for_send, ScreenStateContext.dirty_rect)
                     send_if_changed(win, to_client_queue)
+                    print("FINISHED SENDING!")
         except:
             import traceback
             traceback.print_exc()
