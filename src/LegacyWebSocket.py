@@ -12,9 +12,10 @@ connections = {}
 
 
 class LegacyWebSocket(Protocol):
-    def __init__(self, sockets, queue):
+    def __init__(self, sockets, queue, cursor_queue):
         self.sockets = sockets
         self.queue = queue
+        self.cursor_queue = cursor_queue
         self.user = {}
         self.lock = allocate_lock()
 
@@ -35,7 +36,7 @@ class LegacyWebSocket(Protocol):
                     continue
                 elif i_msg[0] == ord(b'\x00'):
                     i_msg = i_msg[1:]
-                
+
                 if i_msg.startswith(b'{'):
                     command = json.loads(i_msg.decode('utf-8'))
                     from_client_queue.put(command)
@@ -44,12 +45,17 @@ class LegacyWebSocket(Protocol):
                     reactor.callLater(0.05, self.loop)
     
     def loop(self):
-        if not self.queue.empty():
-            i_data = self.queue.get()
+        if 'wsCursor' in self.sockets[self]['headers'][b'location']:
+            queue = self.cursor_queue
+        else:
+            queue = self.queue
+
+        if not queue.empty():
+            i_data = queue.get()
             try:
                 self.send_data(json.dumps(i_data, ensure_ascii=True).encode('ascii'))
             except KeyError:
-                self.queue.put(i_data)
+                queue.put(i_data)
                 raise
         reactor.callLater(0.05, self.loop)
 
@@ -136,6 +142,8 @@ class LegacyWebSocket(Protocol):
             headers[key] = value
 
         headers[b"Location"] = b"ws://%s%s" % (headers[b"Host"], msg.split()[1])
+        self.sockets[self]['headers'] = headers
+        print('WebSocket Headers:', headers)
 
         if b'Sec-WebSocket-Key1' in headers:
             key1 = headers[b"Sec-WebSocket-Key1"]
@@ -174,11 +182,7 @@ class WebSocketFactory(Factory):
         self.sockets = {}
 
     def buildProtocol(self, addr):
-        print("WebSocketFactory addr:", addr)
-        if 'wsCursor' in addr:
-            return LegacyWebSocket(self.sockets, cursor_queue)
-        else:
-            return LegacyWebSocket(self.sockets, queue)
+        return LegacyWebSocket(self.sockets, queue, cursor_queue)
 
 
 def main(_queue, _cursor_queue, _from_client_queue):
