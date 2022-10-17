@@ -26,6 +26,7 @@ const startListener = function() {
     var inputDummy = document.getElementById('input_dummy');
     var chromiumCanvas = document.getElementById('chromiumCanvas');
     var wsConn = new WebSocket('ws://' + window.location.hostname + ":8080/ws");
+    var wsCursorConn = new WebSocket('ws://' + window.location.hostname + ":8080/wsCursor");
 
     var ctx = chromiumCanvas.getContext('2d');
 
@@ -117,6 +118,10 @@ const startListener = function() {
         setMessage("ERROR " + code + e);
     };
 
+    wsCursorConn.onopen = function() {};
+    wsCursorConn.onclose = function(e) {};
+    wsCursorConn.onerror = function(e, code) {};
+
     var lineData = [];
     var DIVISOR = 32;
 
@@ -134,7 +139,7 @@ const startListener = function() {
     var cursorId = 0;
     //ctx.scale(TIMES_BY, TIMES_BY);
 
-    wsConn.onmessage = function(message) {
+    wsCursorConn.onmessage = function(message) {
         var data = JSON.parse(message.data);
 
         if (data['type'] === 'cursor_move') {
@@ -151,6 +156,10 @@ const startListener = function() {
             }, 0);
             return;
         }
+    }
+
+    wsConn.onmessage = function(message) {
+        var data = JSON.parse(message.data);
 
         var x = 0;
         var y = 0;

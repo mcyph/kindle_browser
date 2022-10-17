@@ -12,8 +12,9 @@ connections = {}
 
 
 class LegacyWebSocket(Protocol):
-    def __init__(self, sockets):
+    def __init__(self, sockets, queue):
         self.sockets = sockets
+        self.queue = queue
         self.user = {}
         self.lock = allocate_lock()
 
@@ -43,12 +44,12 @@ class LegacyWebSocket(Protocol):
                     reactor.callLater(0.05, self.loop)
     
     def loop(self):
-        if not queue.empty():
-            i_data = queue.get()
+        if not self.queue.empty():
+            i_data = self.queue.get()
             try:
                 self.send_data(json.dumps(i_data, ensure_ascii=True).encode('ascii'))
             except KeyError:
-                queue.put(i_data)
+                self.queue.put(i_data)
                 raise
         reactor.callLater(0.05, self.loop)
 
@@ -173,16 +174,20 @@ class WebSocketFactory(Factory):
         self.sockets = {}
 
     def buildProtocol(self, addr):
-        return LegacyWebSocket(self.sockets)
+        print("WebSocketFactory addr:", addr)
+        if 'wsCursor' in addr:
+            return LegacyWebSocket(self.sockets, cursor_queue)
+        else:
+            return LegacyWebSocket(self.sockets, queue)
 
 
-def main(_queue, _from_client_queue):
-    global queue, from_client_queue
+def main(_queue, _cursor_queue, _from_client_queue):
+    global queue, cursor_queue, from_client_queue
     queue = _queue
+    cursor_queue = _cursor_queue
     from_client_queue = _from_client_queue
     port = 8080
     reactor.listenTCP(port, WebSocketFactory())
     print("listen", '192.168.1.196:' + str(port))
     reactor.run(installSignalHandlers=False)
-
 

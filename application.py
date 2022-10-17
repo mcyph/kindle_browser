@@ -17,6 +17,7 @@ HOST = '0.0.0.0'
 PORT = 8000
 
 to_client_queue = Queue()
+to_client_cursor_queue = Queue()
 from_client_queue = Queue()
 
 
@@ -144,7 +145,7 @@ def monitor_client_queue():
 
 
 thread = threading.Thread(target=wsmain,
-                          args=(to_client_queue, from_client_queue))
+                          args=(to_client_queue, to_client_cursor_queue, from_client_queue))
 thread.start()
 
 
@@ -179,7 +180,7 @@ def main():
     LegacyWebSocket.background = background
 
     thread_2 = threading.Thread(target=x_damage_events.main,
-                                args=(to_client_queue, pid))
+                                args=(to_client_queue, to_client_cursor_queue, pid))
     #xdamage_test.main(to_client_queue, pid)
     thread_2.start()
 

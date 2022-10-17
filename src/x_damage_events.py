@@ -153,7 +153,7 @@ def _image_changed_thread(win, to_client_queue):
 #        time.sleep(1)
 
 
-def main(to_client_queue, pid):
+def main(to_client_queue, to_client_cursor_queue, pid):
     window1_x_id = int(subprocess.check_output(['xdotool', 'search', '--any',
                                                 '--pid', str(pid),
                                                 '--name',  # 'Xnest',
@@ -180,7 +180,7 @@ def main(to_client_queue, pid):
     t.start()
 
     t = threading.Thread(target=run_motion_change_event_listener,
-                         args=[to_client_queue])  # window1
+                         args=[to_client_cursor_queue])  # window1
     t.start()
 
     #t = threading.Thread(target=_send_full_repaints_thread, args=(to_client_queue, window1))

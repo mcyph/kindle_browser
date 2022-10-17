@@ -51,7 +51,7 @@ record_dpy = display.Display()
 q = Queue()
 
 
-def _check_queue(to_client_queue):
+def _check_queue(to_client_cursor_queue):
     while True:
         try:
             event = q.get()
@@ -59,7 +59,7 @@ def _check_queue(to_client_queue):
                 event = q.get()
             #with ScreenStateContext.lock:
             #print("MotionNotify send", event.root_x, event.root_y)
-            to_client_queue.put({
+            to_client_cursor_queue.put({
                 'type': 'cursor_move',
                 'absolute_x': event.root_x,
                 'absolute_y': event.root_y,
@@ -73,9 +73,9 @@ def _check_queue(to_client_queue):
         time.sleep(0.05)
 
 
-def run_motion_change_event_listener(to_client_queue):
+def run_motion_change_event_listener(to_client_cursor_queue):
     t = threading.Thread(target=_check_queue,
-                         args=[to_client_queue])
+                         args=[to_client_cursor_queue])
     t.start()
 
     def record_callback(reply):
