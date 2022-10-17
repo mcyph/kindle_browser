@@ -118,7 +118,7 @@ const startListener = function() {
     };
 
     var lineData = [];
-    var DIVISOR = 64;
+    var DIVISOR = 32;
 
     for (var i=0; i<Math.ceil(255/DIVISOR); i++) {
         var imData = ctx.createImageData(1300, 5);
