@@ -47,6 +47,9 @@ from src.process_image_for_output import process_image_for_output
 from src.x_motion_events import run_motion_change_event_listener
 
 
+WINDOW_LOCK = thread.allocate_lock()
+
+
 def get_image_from_win(win, pt_w, pt_h, pt_x=0, pt_y=0):
     #print(pt_w, pt_h, pt_x, pt_y)
     try:
@@ -134,7 +137,8 @@ def _image_changed_thread(to_client_queue):
             with ScreenStateContext.lock:
                 if ScreenStateContext.ready_for_send and ScreenStateContext.dirty_rect:
                     #print("SENDING:", ScreenStateContext.ready_for_send, ScreenStateContext.dirty_rect)
-                    send_if_changed(window1, to_client_queue)
+                    with WINDOW_LOCK:
+                        send_if_changed(window1, to_client_queue)
                     print("FINISHED SENDING!")
         except:
             import traceback
@@ -215,11 +219,13 @@ def main(to_client_queue, to_client_cursor_queue, pid):
 
         if time.time() - start_time > 3:
             # HACK: On raspberry pi it seems events stop working randomly
-            old_window1 = window1
-            old_d = d
-            window1, d = get_display()
-            old_window1.destroy()
-            old_d.close()
+            with WINDOW_LOCK:
+                old_window1 = window1
+                old_d = d
+                window1, d = get_display()
+                old_window1.destroy()
+                old_d.close()
+
             start_time = time.time()
 
         time.sleep(0.1)
