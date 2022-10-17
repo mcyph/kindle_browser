@@ -218,6 +218,7 @@ def main(to_client_queue, pid):
         if time.time() - start_time > 3:
             # HACK: On raspberry pi it seems events stop working randomly
             window1, d = get_display()
+            start_time = time.time()
 
         time.sleep(0.3)
 
