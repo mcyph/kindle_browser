@@ -157,54 +157,67 @@ def _image_changed_thread(win, to_client_queue):
 
 
 def main(to_client_queue, pid):
-    d = display.Display()
-    check_ext(d)
-
     window1_x_id = int(subprocess.check_output(['xdotool', 'search', '--any',
                                                 '--pid', str(pid),
-                                                '--name', #'Xnest',
+                                                '--name',  # 'Xnest',
                                                 'Xephyr on :2.0'
                                                 ]).decode('ascii').strip().split('\n')[-1])
 
-    window1 = d.create_resource_object('window', window1_x_id)
+    def get_display():
+        d = display.Display()
+        check_ext(d)
 
-    window1.damage_create(damage.DamageReportRawRectangles)
-    window1.set_wm_normal_hints(
-        flags=(Xutil.PPosition | Xutil.PSize | Xutil.PMinSize),
-        min_width=50,
-        min_height=50
-    )
+        window1 = d.create_resource_object('window', window1_x_id)
+        window1.damage_create(damage.DamageReportRawRectangles)
+        window1.set_wm_normal_hints(
+            flags=(Xutil.PPosition | Xutil.PSize | Xutil.PMinSize),
+            min_width=50,
+            min_height=50
+        )
+        return window1, d
 
-    t = threading.Thread(target=_image_changed_thread, args=[window1, to_client_queue])
+    window1, d = get_display()
+
+    t = threading.Thread(target=_image_changed_thread,
+                         args=[window1, to_client_queue])
     t.start()
 
-    t = threading.Thread(target=run_motion_change_event_listener, args=[to_client_queue])  # window1
+    t = threading.Thread(target=run_motion_change_event_listener,
+                         args=[to_client_queue])  # window1
     t.start()
 
     #t = threading.Thread(target=_send_full_repaints_thread, args=(to_client_queue, window1))
     #t.start()
 
-    while 1:
-        try:
-            event = d.next_event()
+    start_time = time.time()
 
-            #with Timer('xdamage event'):
-            #print("EVENT:", event)
-            if event.type == X.Expose:
-                if event.count == 0:
-                    pass
-            elif event.type == d.extension_event.DamageNotify:
-                ScreenStateContext.add_to_dirty_rect(event.area.x,
-                                                     event.area.y,
-                                                     event.area.width + event.area.x,
-                                                     event.area.height + event.area.y)
-            elif event.type == X.DestroyNotify:
-                sys.exit(0)
-            else:
-                print(f"WARNING: Unknown event type: {event.type}")
-            #time.sleep(0.2)
-        except:
-            import traceback
-            traceback.print_exc()
-            time.sleep(0.3)
+    while 1:
+        while d.pending_events():
+            try:
+                event = d.next_event()
+
+                #with Timer('xdamage event'):
+                #print("EVENT:", event)
+                if event.type == X.Expose:
+                    if event.count == 0:
+                        pass
+                elif event.type == d.extension_event.DamageNotify:
+                    ScreenStateContext.add_to_dirty_rect(event.area.x,
+                                                         event.area.y,
+                                                         event.area.width + event.area.x,
+                                                         event.area.height + event.area.y)
+                elif event.type == X.DestroyNotify:
+                    sys.exit(0)
+                else:
+                    print(f"WARNING: Unknown event type: {event.type}")
+                #time.sleep(0.2)
+            except:
+                import traceback
+                traceback.print_exc()
+
+        if time.time() - start_time > 3:
+            # HACK: On raspberry pi it seems events stop working randomly
+            window1, d = get_display()
+
+        time.sleep(0.3)
 

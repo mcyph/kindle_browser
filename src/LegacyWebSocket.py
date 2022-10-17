@@ -79,7 +79,7 @@ class LegacyWebSocket(Protocol):
         return base64.b64encode(ser_key)
 
     def send_data(self, raw_str):
-        print("sending:", self)
+        #print("sending:", self)
         with self.lock:
             if self.sockets[self]['new_version']:
                 back_str = []
@@ -99,7 +99,7 @@ class LegacyWebSocket(Protocol):
             else:
                 back_str = b'\x00%s\xFF' % (raw_str)
                 self.transport.write(back_str)
-        print("send:", self)
+        #print("sent:", self)
 
     def parse_recv_data(self, msg):
         raw_str = ''
