@@ -157,14 +157,8 @@ def _image_changed_thread(to_client_queue):
 #        time.sleep(1)
 
 
-def main(to_client_queue, to_client_cursor_queue, pid):
+def main(to_client_queue, to_client_cursor_queue, window1_x_id):
     global window1
-
-    window1_x_id = int(subprocess.check_output(['xdotool', 'search', '--any',
-                                                '--pid', str(pid),
-                                                '--name',  # 'Xnest',
-                                                'Xephyr on :2.0'
-                                                ]).decode('ascii').strip().split('\n')[-1])
 
     def get_display():
         d = display.Display()

@@ -176,11 +176,19 @@ def main():
 
     time.sleep(1)
 
+    window1_x_id = int(subprocess.check_output([
+        'xdotool', 'search', '--any',
+        '--pid', str(pid),
+        '--name',  # 'Xnest',
+        'Xephyr on :2.0'
+    ]).decode('ascii').strip().split('\n')[-1])
+    system(f'xdotool windowmove {window1_x_id} 0 0')
+
     background = Image.new("L", (ScreenStateContext.screen_x, ScreenStateContext.screen_y), (255,))
     LegacyWebSocket.background = background
 
     thread_2 = threading.Thread(target=x_damage_events.main,
-                                args=(to_client_queue, to_client_cursor_queue, pid))
+                                args=(to_client_queue, to_client_cursor_queue, window1_x_id))
     #xdamage_test.main(to_client_queue, pid)
     thread_2.start()
 

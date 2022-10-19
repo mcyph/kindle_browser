@@ -105,13 +105,20 @@ const startListener = function() {
 
     var lineData = [];
     var DIVISOR = 32;
+    var NUM_SHADES = Math.floor(255/DIVISOR);
 
-    for (var i=0; i<Math.ceil(255/DIVISOR); i++) {
+    for (var i=0; i<NUM_SHADES; i++) {
         var imData = ctx.createImageData(1300, 5);
         for (var j=0; j<1300*4*5; j+=4) {
-            imData.data[j+0] = i * DIVISOR;
-            imData.data[j+1] = i * DIVISOR;
-            imData.data[j+2] = i * DIVISOR;
+            if (i === NUM_SHADES-1) {
+                imData.data[j+0] = 255;
+                imData.data[j+1] = 255;
+                imData.data[j+2] = 255;
+            } else {
+                imData.data[j+0] = i * DIVISOR;
+                imData.data[j+1] = i * DIVISOR;
+                imData.data[j+2] = i * DIVISOR;
+            }
             imData.data[j+3] = 255;
         }
         lineData.push(imData);
