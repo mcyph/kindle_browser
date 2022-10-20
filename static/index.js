@@ -105,7 +105,7 @@ const startListener = function() {
 
     var lineData = [];
     var DIVISOR = 32;
-    var NUM_SHADES = Math.floor(255/DIVISOR);
+    var NUM_SHADES = Math.ceil(255/DIVISOR);
 
     for (var i=0; i<NUM_SHADES; i++) {
         var imData = ctx.createImageData(1300, 5);
