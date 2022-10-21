@@ -10,8 +10,8 @@ if (false) {
     var TIMES_BY = 2.9;
     var TIMES_EVENTS_BY = 0.6;
 } else {
-    var TIMES_BY = 1.55;
-    var TIMES_EVENTS_BY = 0.65;
+    var TIMES_BY = 1.42;
+    var TIMES_EVENTS_BY = 0.71;
 }
 
 const startListener = function() {
@@ -113,15 +113,18 @@ const startListener = function() {
 
     for (var i=0; i<NUM_SHADES; i++) {
         var imData = ctx.createImageData(1300, 5);
+        var brightness = i * DIVISOR;
+        brightness = Math.round(brightness * 0.8); // Increase contrast
+
         for (var j=0; j<1300*4*5; j+=4) {
             if (i === NUM_SHADES-1) {
                 imData.data[j+0] = 255;
                 imData.data[j+1] = 255;
                 imData.data[j+2] = 255;
             } else {
-                imData.data[j+0] = i * DIVISOR;
-                imData.data[j+1] = i * DIVISOR;
-                imData.data[j+2] = i * DIVISOR;
+                imData.data[j+0] = brightness;
+                imData.data[j+1] = brightness;
+                imData.data[j+2] = brightness;
             }
             imData.data[j+3] = 255;
         }
@@ -165,15 +168,15 @@ const startListener = function() {
                 }
                 data['relative_y'] -= 30; // HACK!
                 data['relative_x'] -= 5; // HACK!
-                updateCursorPosition(data['relative_x'], data['relative_y']);
+                updateCursorPosition(data['relative_x'] * TIMES_BY, data['relative_y'] * TIMES_BY);
             }, 0);
             return;
         };
 
         var updateCursorPosition = function(x, y) {
             var cursor = document.getElementById('cursor');
-            cursor.style.left = x * TIMES_BY + 'px';
-            cursor.style.top = y * TIMES_BY + 'px';
+            cursor.style.left = x + 'px';
+            cursor.style.top = y + 'px';
         };
 
         wsConn.onmessage = function(message) {
@@ -198,7 +201,7 @@ const startListener = function() {
                         Math.ceil((data.top + y) * TIMES_BY),
                         0, 0,
                         Math.ceil(TIMES_BY * amount),
-                        Math.ceil(TIMES_BY)
+                        1.1//Math.ceil(TIMES_BY)
                     );
                 } catch (e) {
                     alert("ERROR DRAWFOR: " + darkness + " " + amount + " " + lineData.length + " " + lineData[darkness]);
