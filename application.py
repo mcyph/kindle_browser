@@ -150,6 +150,8 @@ thread.start()
 
 
 def main():
+    X_DISPLAY = ':2'
+
     proc = subprocess.Popen([
         'Xephyr',
         #'Xnest',
@@ -166,7 +168,7 @@ def main():
         #'-geometry', f'{ScreenStateContext.screen_x}x{ScreenStateContext.screen_y}',
 
         '-screen', f'{ScreenStateContext.screen_x}x{ScreenStateContext.screen_y}', # x16
-        ':2',
+        X_DISPLAY,
     ], shell=False)
     pid = proc.pid
 
@@ -180,7 +182,7 @@ def main():
         'xdotool', 'search', '--any',
         '--pid', str(pid),
         '--name',  # 'Xnest',
-        'Xephyr on :2.0'
+        'Xephyr on '
     ]).decode('ascii').strip().split('\n')[-1])
     system(f'xdotool windowmove {window1_x_id} 0 0')
 
@@ -188,13 +190,14 @@ def main():
     LegacyWebSocket.background = background
 
     thread_2 = threading.Thread(target=x_damage_events.main,
-                                args=(to_client_queue, to_client_cursor_queue, window1_x_id))
+                                args=(to_client_queue, to_client_cursor_queue,
+                                      window1_x_id, X_DISPLAY))
     #xdamage_test.main(to_client_queue, pid)
     thread_2.start()
 
-    #system("DISPLAY=:2 onboard &")
-    system(f"DISPLAY=:2 matchbox-window-manager &")
-    system(f"DISPLAY=:2 firefox -P Xephyr -width {ScreenStateContext.screen_x} -height {ScreenStateContext.screen_y} &")
+    #system(f"DISPLAY={X_DISPLAY} onboard &")
+    system(f"DISPLAY={X_DISPLAY} matchbox-window-manager &")
+    system(f"DISPLAY={X_DISPLAY} firefox -P Xephyr -width {ScreenStateContext.screen_x} -height {ScreenStateContext.screen_y} &")
 
     #loop = asyncio.get_event_loop()
     app = aiohttp.web.Application()

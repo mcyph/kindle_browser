@@ -52,8 +52,8 @@ record_dpy = display.Display()
 q = Queue()
 
 
-def _check_queue(to_client_cursor_queue):
-    x_cursor = Xcursor(display=b':2')
+def _check_queue(x_display, to_client_cursor_queue):
+    x_cursor = Xcursor(display=x_display.encode('ascii'))
     old_cursor_data = None
 
     while True:
@@ -85,9 +85,9 @@ def _check_queue(to_client_cursor_queue):
         time.sleep(0.05)
 
 
-def run_motion_change_event_listener(to_client_cursor_queue):
+def run_motion_change_event_listener(x_display, to_client_cursor_queue):
     t = threading.Thread(target=_check_queue,
-                         args=[to_client_cursor_queue])
+                         args=[x_display, to_client_cursor_queue])
     t.start()
 
     def record_callback(reply):

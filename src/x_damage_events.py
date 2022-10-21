@@ -157,7 +157,7 @@ def _image_changed_thread(to_client_queue):
 #        time.sleep(1)
 
 
-def main(to_client_queue, to_client_cursor_queue, window1_x_id):
+def main(to_client_queue, to_client_cursor_queue, window1_x_id, x_display):
     global window1
 
     def get_display():
@@ -180,7 +180,7 @@ def main(to_client_queue, to_client_cursor_queue, window1_x_id):
     t.start()
 
     t = threading.Thread(target=run_motion_change_event_listener,
-                         args=[to_client_cursor_queue])  # window1
+                         args=[x_display, to_client_cursor_queue])  # window1
     t.start()
 
     #t = threading.Thread(target=_send_full_repaints_thread, args=(to_client_queue, window1))
