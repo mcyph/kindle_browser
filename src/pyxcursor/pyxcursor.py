@@ -143,7 +143,7 @@ class Xcursor:
 
     def getImage(self):
         from PIL import Image
-        imgarray = self.getCursorImageArrayFast()
+        imgarray = self.getCursorImageArray()
         return Image.fromarray(imgarray)
 
     def getImageAsBase64(self):
