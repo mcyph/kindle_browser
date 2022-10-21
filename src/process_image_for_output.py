@@ -14,7 +14,7 @@ from numba.typed import List
              'y': uint64,
              'x': uint64})
 def run_length_encode(out_array, in_array, num_items):
-    DIVISOR = 32  # = 8 individual shades
+    DIVISOR = 64  # = 4 individual shades
     # May as well reserve values from a certain number for single items
     SINGLE_VALUES_FROM = (255 // DIVISOR) + 1
 

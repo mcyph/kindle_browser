@@ -108,7 +108,7 @@ const startListener = function() {
     };
 
     var lineData = [];
-    var DIVISOR = 32;
+    var DIVISOR = 64;
     var NUM_SHADES = Math.ceil(255/DIVISOR);
 
     for (var i=0; i<NUM_SHADES; i++) {
