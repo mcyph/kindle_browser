@@ -161,16 +161,22 @@ const startListener = function() {
         wsCursorConn.onmessage = function(message) {
             var data = JSON.parse(message.data);
 
-            var useCursorId = ++cursorId;
-            setTimeout(function () {
-                if (cursorId !== useCursorId) {
-                    return;
-                }
-                data['relative_y'] -= 30; // HACK!
-                data['relative_x'] -= 5; // HACK!
-                updateCursorPosition(data['relative_x'] * TIMES_BY, data['relative_y'] * TIMES_BY);
-            }, 0);
-            return;
+            if (data['type'] === 'cursor_move') {
+                var useCursorId = ++cursorId;
+
+                setTimeout(function () {
+                    if (cursorId !== useCursorId) {
+                        return;
+                    }
+                    data['relative_y'] -= 30; // HACK!
+                    data['relative_x'] -= 5; // HACK!
+                    updateCursorPosition(data['relative_x'] * TIMES_BY, data['relative_y'] * TIMES_BY);
+                }, 0);
+                return;
+            } else if (data['type'] === 'cursor_change') {
+                var cursor = document.getElementById('cursor');
+                cursor.src = data['data'];
+            }
         };
 
         var updateCursorPosition = function(x, y) {

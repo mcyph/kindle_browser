@@ -44,6 +44,7 @@ from Xlib.ext import record
 from Xlib.protocol import rq
 
 from src.ScreenStateContext import ScreenStateContext
+from src.pyxcursor.pyxcursor import Xcursor
 
 
 local_dpy = display.Display()
@@ -52,6 +53,9 @@ q = Queue()
 
 
 def _check_queue(to_client_cursor_queue):
+    x_cursor = Xcursor(display=':2')
+    old_cursor_data = None
+
     while True:
         try:
             event = q.get()
@@ -66,6 +70,14 @@ def _check_queue(to_client_cursor_queue):
                 'relative_x': event.root_x,
                 'relative_y': event.root_y,
             })
+
+            cursor_data = x_cursor.getImageAsBase64()
+            if cursor_data != old_cursor_data:
+                old_cursor_data = cursor_data
+                to_client_cursor_queue.push({
+                    'type': 'cursor_change',
+                    'data': cursor_data,
+                })
         except:
             import traceback
             traceback.print_exc()

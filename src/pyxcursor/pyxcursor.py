@@ -143,14 +143,14 @@ class Xcursor:
 
     def getImage(self):
         from PIL import Image
-        imgarray = self.getCursorImageArray()
+        imgarray = self.getCursorImageArrayFast()
         return Image.fromarray(imgarray)
 
     def getImageAsBase64(self):
         img = self.getImage()
         buffered = BytesIO()
-        img.save(buffered, format="JPEG")
-        return base64.b64encode(buffered.getvalue())
+        img.save(buffered, format="PNG")
+        return 'data:image/png;base64,'+base64.b64encode(buffered.getvalue()).decode('ascii')
 
 
 if __name__ == "__main__":
