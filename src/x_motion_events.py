@@ -53,7 +53,7 @@ q = Queue()
 
 
 def _check_queue(to_client_cursor_queue):
-    x_cursor = Xcursor(display=':2')
+    x_cursor = Xcursor(display=b':2')
     old_cursor_data = None
 
     while True:
@@ -74,7 +74,7 @@ def _check_queue(to_client_cursor_queue):
             cursor_data = x_cursor.getImageAsBase64()
             if cursor_data != old_cursor_data:
                 old_cursor_data = cursor_data
-                to_client_cursor_queue.push({
+                to_client_cursor_queue.put({
                     'type': 'cursor_change',
                     'data': cursor_data,
                 })

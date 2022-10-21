@@ -144,7 +144,7 @@ def _image_changed_thread(to_client_queue):
             import traceback
             traceback.print_exc()
 
-        time.sleep(0.3)
+        time.sleep(0.1)
 
 
 #def _send_full_repaints_thread(to_client_queue, window1):
