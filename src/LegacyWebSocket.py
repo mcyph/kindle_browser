@@ -190,6 +190,6 @@ class WebSocketFactory(Factory):
 def main(queue, cursor_queue, from_client_queue):
     port = 8080
     reactor.listenTCP(port, WebSocketFactory(queue, cursor_queue, from_client_queue))
-    print("listen", '192.168.1.196:' + str(port))
+    print("listen", str(port))
     reactor.run(installSignalHandlers=False)
 

@@ -75,21 +75,25 @@ const startListener = function() {
     document.addEventListener('mousemove', function(e) {
         if (e.pageY < IGNORE_ABOVE) {
             sendJSON({type: 'mouseMove', left: e.pageX, top: e.pageY});
+            updateCursorPosition(e.pageX, e.pageY);
         }
     });
     document.addEventListener('mousedown', function(e) {
         if (e.pageY < IGNORE_ABOVE) {
             sendJSON({ type: 'mouseDown', left: e.pageX, top: e.pageY });
+            updateCursorPosition(e.pageX, e.pageY);
         }
     });
     document.addEventListener('mouseup', function(e) {
         if (e.pageY < IGNORE_ABOVE) {
             sendJSON({type: 'mouseUp', left: e.pageX, top: e.pageY});
+            updateCursorPosition(e.pageX, e.pageY);
         }
     });
     document.addEventListener('click', function(e) {
         if (e.pageY < IGNORE_ABOVE) {
             sendJSON({type: 'click', left: e.pageX, top: e.pageY});
+            updateCursorPosition(e.pageX, e.pageY);
         }
     });
     /*document.onscroll = function(e) {
@@ -131,27 +135,27 @@ const startListener = function() {
         var wsConn = new WebSocket('ws://' + window.location.hostname + ":8080/ws");
         var wsCursorConn = new WebSocket('ws://' + window.location.hostname + ":8080/wsCursor");
 
-        wsConn.onopen = function () {
+        wsConn.onopen = function() {
             setMessage("");
             //wsConn.send('firstData!');
             sendJSON({type: 'command', command: 'initialFrame'});
         };
-        wsConn.onclose = function (e) {
+        wsConn.onclose = function(e) {
             setMessage("Disconn. " + JSON.stringify(e));
             active = false;
         };
-        wsConn.onerror = function (e, code) {
+        wsConn.onerror = function(e, code) {
             setMessage("ERROR " + code + e);
         };
 
-        wsCursorConn.onopen = function () {
+        wsCursorConn.onopen = function() {
         };
-        wsCursorConn.onclose = function (e) {
+        wsCursorConn.onclose = function(e) {
         };
-        wsCursorConn.onerror = function (e, code) {
+        wsCursorConn.onerror = function(e, code) {
         };
 
-        wsCursorConn.onmessage = function (message) {
+        wsCursorConn.onmessage = function(message) {
             var data = JSON.parse(message.data);
 
             var useCursorId = ++cursorId;
@@ -159,16 +163,20 @@ const startListener = function() {
                 if (cursorId !== useCursorId) {
                     return;
                 }
-                var cursor = document.getElementById('cursor');
                 data['relative_y'] -= 30; // HACK!
                 data['relative_x'] -= 5; // HACK!
-                cursor.style.left = data['relative_x'] * TIMES_BY + 'px';
-                cursor.style.top = data['relative_y'] * TIMES_BY + 'px';
+                updateCursorPosition(data['relative_x'], data['relative_y']);
             }, 0);
             return;
         };
 
-        wsConn.onmessage = function (message) {
+        var updateCursorPosition = function(x, y) {
+            var cursor = document.getElementById('cursor');
+            cursor.style.left = x * TIMES_BY + 'px';
+            cursor.style.top = y * TIMES_BY + 'px';
+        };
+
+        wsConn.onmessage = function(message) {
             var data = JSON.parse(message.data);
 
             var x = 0;
