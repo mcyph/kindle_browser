@@ -80,19 +80,19 @@ const startListener = function() {
     });
     document.addEventListener('mousedown', function(e) {
         if (e.pageY < IGNORE_ABOVE) {
-            sendJSON({ type: 'mouseDown', left: e.pageX, top: e.pageY });
+            //sendJSON({ type: 'mouseDown', left: e.pageX, top: e.pageY });
             updateCursorPosition(e.pageX, e.pageY);
         }
     });
     document.addEventListener('mouseup', function(e) {
         if (e.pageY < IGNORE_ABOVE) {
-            sendJSON({type: 'mouseUp', left: e.pageX, top: e.pageY});
+            //sendJSON({type: 'mouseUp', left: e.pageX, top: e.pageY});
             updateCursorPosition(e.pageX, e.pageY);
         }
     });
     document.addEventListener('click', function(e) {
         if (e.pageY < IGNORE_ABOVE) {
-            sendJSON({type: 'click', left: e.pageX, top: e.pageY});
+            //sendJSON({type: 'click', left: e.pageX, top: e.pageY});
             updateCursorPosition(e.pageX, e.pageY);
         }
     });

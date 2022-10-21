@@ -58,9 +58,10 @@ def monitor_client_queue():
         try:
             if command['type'] == 'mouseMove':
                 system(f"DISPLAY=:2 xdotool mousemove {x} {y}")
+                system(f"DISPLAY=:2 xdotool click 1")
             elif command['type'] == 'mouseDown':
                 system(f"DISPLAY=:2 xdotool mousemove {x} {y}")
-                system(f"DISPLAY=:2 xdotool click 1")
+                #system(f"DISPLAY=:2 xdotool click 1")
             # elif command['type'] in ('mouseUp', 'click') and self.mouse_down:
             #    system(f"DISPLAY=:2 xdotool mousemove {x} {y}")
             #    system(f"DISPLAY=:2 xdotool mouseup")
