@@ -113,7 +113,7 @@ const startListener = function() {
     var DIVISOR = 64;
     var NUM_SHADES = Math.ceil(255/DIVISOR);
     var IMAGE_DATA_WIDTH = 2000;
-    var IMAGE_DATA_HEIGHT = 150
+    var IMAGE_DATA_HEIGHT = 150;
 
     for (var i=0; i<NUM_SHADES; i++) {
         var imData = ctx.createImageData(IMAGE_DATA_WIDTH, IMAGE_DATA_HEIGHT);
@@ -126,7 +126,7 @@ const startListener = function() {
             brightness = Math.round(brightness * 0.8); // Increase contrast
         }
 
-        for (var j=0; j<IMAGE_DATA_WIDTH*4*IMAGE_DATA_HEIGHT; j+=4) {
+        for (var j=0; j<IMAGE_DATA_WIDTH*4*IMAGE_DATA_HEIGHT*2; j+=4) {
             data[j+0] = brightness;
             data[j+1] = brightness;
             data[j+2] = brightness;
