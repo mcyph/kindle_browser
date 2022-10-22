@@ -215,6 +215,41 @@ const startListener = function() {
                 }
             };
 
+            // Get the most common shade
+            var counts = {};
+            for (var i = 0; i < rleData.length; i++) {
+                var j = rleData.charCodeAt(i);
+                if (j >= SINGLE_VALUES_FROM) {
+                    darkness = j - SINGLE_VALUES_FROM;
+                    runsFor = 1;
+                } else {
+                    darkness = j;
+                    runsFor = rleData.charCodeAt(i + 1);
+                    i += 1;
+                }
+                counts[darkness] = (counts[darkness] || 0) + runsFor;
+            }
+            var longestRun = 0;
+            var longestShade = null;
+
+            for (var k in counts) {
+                if (counts[k] > longestRun) {
+                    longestRun = counts[k];
+                    longestShade = parseInt(k);
+                }
+            }
+
+            // Fill in the most common shade as background as a single operation
+            ctx.beginPath();
+            ctx.rect(
+                Math.ceil(data.left * TIMES_BY),
+                Math.ceil(data.top * TIMES_BY),
+                Math.ceil(data.width * TIMES_BY),
+                Math.ceil(data.height * TIMES_BY)
+            );
+            ctx.fill();
+            ctx.closePath();
+
             try {
                 for (var i = 0; i < rleData.length; i++) {
                     var j = rleData.charCodeAt(i);
@@ -232,7 +267,9 @@ const startListener = function() {
                         // Goes to next line
                         var toEndOfLine = width - x;
                         if (toEndOfLine) {
-                            drawFor(darkness, toEndOfLine);
+                            if (darkness !== longestShade) {
+                                drawFor(darkness, toEndOfLine);
+                            }
                             x += toEndOfLine;
                         }
                         runsFor -= toEndOfLine;
@@ -242,7 +279,9 @@ const startListener = function() {
 
                     if (runsFor) {
                         // All on same line
-                        drawFor(darkness, runsFor);
+                        if (darkness !== longestShade) {
+                            drawFor(darkness, runsFor);
+                        }
                         x += runsFor;
                     }
                 }
