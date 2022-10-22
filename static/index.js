@@ -6,9 +6,9 @@ var IGNORE_ABOVE = 1300;
 var SCREEN_WIDTH = 1236; // NOTE ME!
 //var SCREEN_WIDTH = 800*3;
 
-if (false) {
-    var TIMES_BY = 2.9;
-    var TIMES_EVENTS_BY = 0.6;
+if (true) {
+    var TIMES_BY = 2.65;
+    var TIMES_EVENTS_BY = 0.677;
 } else {
     var TIMES_BY = 1.42;
     var TIMES_EVENTS_BY = 0.71;
@@ -113,7 +113,8 @@ const startListener = function() {
     var NUM_SHADES = Math.ceil(255/DIVISOR);
 
     for (var i=0; i<NUM_SHADES; i++) {
-        var imData = ctx.createImageData(1300, 5);
+        var imData = ctx.createImageData(3000, 40);
+        var data = imData.data;
         var brightness = i * DIVISOR;
 
         if (i === NUM_SHADES-1) {
@@ -122,11 +123,11 @@ const startListener = function() {
             brightness = Math.round(brightness * 0.8); // Increase contrast
         }
 
-        for (var j=0; j<1300*4*5; j+=4) {
-            imData.data[j+0] = brightness;
-            imData.data[j+1] = brightness;
-            imData.data[j+2] = brightness;
-            imData.data[j+3] = 255;
+        for (var j=0; j<3000*4*40; j+=4) {
+            data[j+0] = brightness;
+            data[j+1] = brightness;
+            data[j+2] = brightness;
+            data[j+3] = 255;
         }
 
         lineData.push(imData);
@@ -134,7 +135,7 @@ const startListener = function() {
     }
 
     var cursorId = 0;
-    //ctx.scale(TIMES_BY, TIMES_BY);
+    //ctx.scale(0.53, 0.55);
 
     for (var __=0; __<4; __++) {
         var wsConn = new WebSocket('ws://' + window.location.hostname + ":8080/ws");
@@ -177,7 +178,7 @@ const startListener = function() {
                 return;
             } else if (data['type'] === 'cursor_change') {
                 var cursor = document.getElementById('cursor');
-                cursor.src = data['data'];
+                //cursor.src = data['data'];
             }
         };
 
@@ -209,7 +210,7 @@ const startListener = function() {
                         Math.ceil((data.top + y) * TIMES_BY),
                         0, 0,
                         Math.ceil(TIMES_BY * amount),
-                        1.1//Math.ceil(TIMES_BY)
+                        Math.ceil(TIMES_BY)
                     );
                 } catch (e) {
                     alert("ERROR DRAWFOR: " + darkness + " " + amount + " " + lineData.length + " " + lineData[darkness]);
@@ -241,20 +242,26 @@ const startListener = function() {
                 }
             }
 
-            // Fill in the most common shade as background as a single operation
-            ctx.beginPath();
-            var darkness = darknessValues[longestShade];
-            ctx.fillStyle = 'rgb('+darkness+','+darkness+','+darkness+')';
-            ctx.rect(
-                Math.ceil(data.left * TIMES_BY),
-                Math.ceil(data.top * TIMES_BY),
-                Math.ceil(data.width * TIMES_BY),
-                Math.ceil(data.height * TIMES_BY)
-            );
-            ctx.fill();
-            ctx.closePath();
-
             try {
+                // Fill in the most common shade as background as a single operation
+                var amountToGo = Math.ceil(TIMES_BY * data.height);
+                //alert("NEW "+amountToGo);
+                var currentY = 0;
+                while (amountToGo > 0) {
+                    var amountThisTime = 20;
+                    ctx.putImageData(
+                        lineData[longestShade],
+                        Math.ceil(data.left * TIMES_BY),
+                        currentY + Math.ceil(data.top * TIMES_BY),
+                        0, 0,
+                        Math.ceil(TIMES_BY * data.width),
+                        amountThisTime
+                    );
+                    currentY += amountThisTime;
+                    amountToGo -= amountThisTime;
+                }
+                //alert("BREAK "+longestShade);
+
                 for (var i = 0; i < rleData.length; i++) {
                     var j = rleData.charCodeAt(i);
                     if (j >= SINGLE_VALUES_FROM) {
