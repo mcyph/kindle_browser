@@ -113,7 +113,7 @@ const startListener = function() {
     var NUM_SHADES = Math.ceil(255/DIVISOR);
 
     for (var i=0; i<NUM_SHADES; i++) {
-        var imData = ctx.createImageData(3000, 40);
+        var imData = ctx.createImageData(2000, 100);
         var data = imData.data;
         var brightness = i * DIVISOR;
 
@@ -123,7 +123,7 @@ const startListener = function() {
             brightness = Math.round(brightness * 0.8); // Increase contrast
         }
 
-        for (var j=0; j<3000*4*40; j+=4) {
+        for (var j=0; j<2000*4*40; j+=4) {
             data[j+0] = brightness;
             data[j+1] = brightness;
             data[j+2] = brightness;
@@ -248,7 +248,7 @@ const startListener = function() {
                 //alert("NEW "+amountToGo);
                 var currentY = 0;
                 while (amountToGo > 0) {
-                    var amountThisTime = 20;
+                    var amountThisTime = 100;
                     ctx.putImageData(
                         lineData[longestShade],
                         Math.ceil(data.left * TIMES_BY),
