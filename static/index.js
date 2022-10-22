@@ -310,7 +310,9 @@ const startListener = function() {
                 setMessage("MSG ERROR: " + e + " " + e.lineNumber);
             }
 
-            sendJSON({type: 'command', command: 'readyForMore'});
+            setTimeout(function() {
+                sendJSON({type: 'command', command: 'readyForMore'});
+            }, 0);
         }
     }
 }
