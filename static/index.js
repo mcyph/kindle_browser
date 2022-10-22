@@ -108,27 +108,29 @@ const startListener = function() {
     };
 
     var lineData = [];
+    var darknessValues = [];
     var DIVISOR = 64;
     var NUM_SHADES = Math.ceil(255/DIVISOR);
 
     for (var i=0; i<NUM_SHADES; i++) {
         var imData = ctx.createImageData(1300, 5);
         var brightness = i * DIVISOR;
-        brightness = Math.round(brightness * 0.8); // Increase contrast
+
+        if (i === NUM_SHADES-1) {
+            brightness = 255;
+        } else {
+            brightness = Math.round(brightness * 0.8); // Increase contrast
+        }
 
         for (var j=0; j<1300*4*5; j+=4) {
-            if (i === NUM_SHADES-1) {
-                imData.data[j+0] = 255;
-                imData.data[j+1] = 255;
-                imData.data[j+2] = 255;
-            } else {
-                imData.data[j+0] = brightness;
-                imData.data[j+1] = brightness;
-                imData.data[j+2] = brightness;
-            }
+            imData.data[j+0] = brightness;
+            imData.data[j+1] = brightness;
+            imData.data[j+2] = brightness;
             imData.data[j+3] = 255;
         }
+
         lineData.push(imData);
+        darknessValues.push(brightness);
     }
 
     var cursorId = 0;
@@ -241,6 +243,8 @@ const startListener = function() {
 
             // Fill in the most common shade as background as a single operation
             ctx.beginPath();
+            var darkness = darknessValues[longestShade];
+            ctx.fillStyle = 'rgb('+darkness+','+darkness+','+darkness+')';
             ctx.rect(
                 Math.ceil(data.left * TIMES_BY),
                 Math.ceil(data.top * TIMES_BY),
