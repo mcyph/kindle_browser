@@ -2,7 +2,8 @@
 
 var active = false;
 
-var IGNORE_ABOVE = 1350;
+// TODO: Move these to be in the python code in one place!
+var IGNORE_ABOVE = 1380;
 var SCREEN_WIDTH = 1236; // NOTE ME!
 //var SCREEN_WIDTH = 800*3;
 
@@ -111,9 +112,11 @@ const startListener = function() {
     var darknessValues = [];
     var DIVISOR = 64;
     var NUM_SHADES = Math.ceil(255/DIVISOR);
+    var IMAGE_DATA_WIDTH = 2000;
+    var IMAGE_DATA_HEIGHT = 150
 
     for (var i=0; i<NUM_SHADES; i++) {
-        var imData = ctx.createImageData(2000, 100);
+        var imData = ctx.createImageData(IMAGE_DATA_WIDTH, IMAGE_DATA_HEIGHT);
         var data = imData.data;
         var brightness = i * DIVISOR;
 
@@ -123,7 +126,7 @@ const startListener = function() {
             brightness = Math.round(brightness * 0.8); // Increase contrast
         }
 
-        for (var j=0; j<2000*4*40; j+=4) {
+        for (var j=0; j<IMAGE_DATA_WIDTH*4*IMAGE_DATA_HEIGHT; j+=4) {
             data[j+0] = brightness;
             data[j+1] = brightness;
             data[j+2] = brightness;
@@ -248,7 +251,7 @@ const startListener = function() {
                 //alert("NEW "+amountToGo);
                 var currentY = 0;
                 while (amountToGo > 0) {
-                    var amountThisTime = amountToGo > 50 ? 50 : amountToGo;
+                    var amountThisTime = amountToGo > IMAGE_DATA_HEIGHT ? IMAGE_DATA_HEIGHT : amountToGo;
                     ctx.putImageData(
                         lineData[longestShade],
                         Math.ceil(data.left * TIMES_BY),
