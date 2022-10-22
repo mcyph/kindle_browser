@@ -152,6 +152,7 @@ thread.start()
 
 def main():
     X_DISPLAY = ':2'
+    CHROMIUM_PROFILE_DIR = '/home/david/kindle_chromium'
 
     proc = subprocess.Popen([
         'Xephyr',
@@ -161,7 +162,7 @@ def main():
         #'-dpi', '400',
         #'-ac',
         #'-noreset',
-        #'-glamor',
+        '-glamor',
         #'-keybd', ',,,xkbmodel=evdev,xkblayout=de',
         #'-mouse',
 
@@ -198,7 +199,8 @@ def main():
 
     #system(f"DISPLAY={X_DISPLAY} onboard &")
     system(f"DISPLAY={X_DISPLAY} matchbox-window-manager &")
-    system(f"DISPLAY={X_DISPLAY} firefox -P Xephyr -width {ScreenStateContext.screen_x} -height {ScreenStateContext.screen_y} &")
+    #system(f"DISPLAY={X_DISPLAY} firefox -P Xephyr -width {ScreenStateContext.screen_x} -height {ScreenStateContext.screen_y} &")
+    system(f"DISPLAY={X_DISPLAY} chromium-browser --user-data-dir='{CHROMIUM_PROFILE_DIR}' &")
 
     #loop = asyncio.get_event_loop()
     app = aiohttp.web.Application()
