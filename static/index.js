@@ -181,7 +181,7 @@ const startListener = function() {
                 return;
             } else if (data['type'] === 'cursor_change') {
                 var cursor = document.getElementById('cursor');
-                //cursor.src = data['data'];
+                cursor.src = data['data'];
             }
         };
 
@@ -191,7 +191,8 @@ const startListener = function() {
             cursor.style.top = y + 'px';
         };
 
-        var drawForPx = 2.1;
+        var drawForPx = 3;
+        var iteration = 0;
 
         wsConn.onmessage = function(message) {
             var data = JSON.parse(message.data);
@@ -212,7 +213,6 @@ const startListener = function() {
                 //if (drawForPx === Math.ceil(TIMES_BY)+1) {
                 //    drawForPx = (Math.ceil(TIMES_BY) - 1) || 1;
                 //}
-
                 try {
                     ctx.putImageData(
                         lineData[darkness],
