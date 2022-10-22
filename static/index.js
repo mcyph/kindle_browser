@@ -2,18 +2,11 @@
 
 var active = false;
 
-// TODO: Move these to be in the python code in one place!
-var IGNORE_ABOVE = 1380;
-var SCREEN_WIDTH = 1236; // NOTE ME!
-//var SCREEN_WIDTH = 800*3;
+var viewportHeight = window.outerHeight;
 
-if (true) {
-    var TIMES_BY = 2.65;
-    var TIMES_EVENTS_BY = 0.677;
-} else {
-    var TIMES_BY = 1.42;
-    var TIMES_EVENTS_BY = 0.71;
-}
+var TIMES_BY = 1.54;
+var TIMES_EVENTS_BY = window.devicePixelRatio > 1.0 ? 0.677 : 0.71;
+TIMES_BY = (TIMES_BY * window.devicePixelRatio) - 0.12;
 
 const startListener = function() {
     if (active)	{
@@ -27,9 +20,13 @@ const startListener = function() {
     var inputDummy = document.getElementById('input_dummy');
     var chromiumCanvas = document.getElementById('chromiumCanvas');
 
-    var ctx = chromiumCanvas.getContext('2d');
+    // HACK!
+    var controlsAt = ((window.devicePixelRatio > 1) ? viewportHeight : (viewportHeight*2)) - 15;
+    document.getElementById('navControls').style.top =  controlsAt+'px';
+    var IGNORE_ABOVE = controlsAt;
 
-    //ctx.imageSmoothingEnabled = false;
+    var ctx = chromiumCanvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
 
     function sendJSON(obj) {
         if ('left' in obj) {
@@ -313,9 +310,7 @@ const startListener = function() {
                 setMessage("MSG ERROR: " + e + " " + e.lineNumber);
             }
 
-            setTimeout(function () {
-                sendJSON({type: 'command', command: 'readyForMore'});
-            }, 0);
+            sendJSON({type: 'command', command: 'readyForMore'});
         }
     }
 }

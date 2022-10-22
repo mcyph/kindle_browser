@@ -199,8 +199,8 @@ def main():
 
     #system(f"DISPLAY={X_DISPLAY} onboard &")
     system(f"DISPLAY={X_DISPLAY} matchbox-window-manager &")
-    #system(f"DISPLAY={X_DISPLAY} firefox -P Xephyr -width {ScreenStateContext.screen_x} -height {ScreenStateContext.screen_y} &")
-    system(f"DISPLAY={X_DISPLAY} chromium-browser --user-data-dir='{CHROMIUM_PROFILE_DIR}' &")
+    system(f"DISPLAY={X_DISPLAY} firefox -P Xephyr -width {ScreenStateContext.screen_x} -height {ScreenStateContext.screen_y} &")
+    #system(f"DISPLAY={X_DISPLAY} chromium-browser --user-data-dir='{CHROMIUM_PROFILE_DIR}' &")
 
     #loop = asyncio.get_event_loop()
     app = aiohttp.web.Application()
