@@ -178,14 +178,19 @@ def main():
                               args=())
     thread.start()
 
-    time.sleep(1)
+    while True:
+        try:
+            time.sleep(0.5)
+            window1_x_id = int(subprocess.check_output([
+                'xdotool', 'search', '--any',
+                '--pid', str(pid),
+                '--name',  # 'Xnest',
+                'Xephyr on '
+            ]).decode('ascii').strip().split('\n')[-1])
+            break
+        except:
+            pass
 
-    window1_x_id = int(subprocess.check_output([
-        'xdotool', 'search', '--any',
-        '--pid', str(pid),
-        '--name',  # 'Xnest',
-        'Xephyr on '
-    ]).decode('ascii').strip().split('\n')[-1])
     system(f'xdotool windowmove {window1_x_id} 0 0')
 
     background = Image.new("L", (ScreenStateContext.screen_x, ScreenStateContext.screen_y), (255,))
