@@ -177,8 +177,8 @@ const startListener = function() {
                     data['relative_y'] -= 30; // HACK!
                     data['relative_x'] -= 5; // HACK!
                     updateCursorPosition(
-                        data['relative_x'] * (1 / TIMES_BY),
-                        data['relative_y'] * (1 / TIMES_BY)
+                        data['relative_x'] * (1 / TIMES_EVENTS_BY),
+                        data['relative_y'] * (1 / TIMES_EVENTS_BY)
                     );
                 }, 0);
                 return;
