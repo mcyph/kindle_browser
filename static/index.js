@@ -176,7 +176,10 @@ const startListener = function() {
                     }
                     data['relative_y'] -= 30; // HACK!
                     data['relative_x'] -= 5; // HACK!
-                    updateCursorPosition(data['relative_x'] * TIMES_BY, data['relative_y'] * TIMES_BY);
+                    updateCursorPosition(
+                        data['relative_x'],// * TIMES_BY,
+                        data['relative_y']// * TIMES_BY
+                    );
                 }, 0);
                 return;
             } else if (data['type'] === 'cursor_change') {
@@ -190,6 +193,8 @@ const startListener = function() {
             cursor.style.left = x + 'px';
             cursor.style.top = y + 'px';
         };
+
+        var drawForPx = 2.1;
 
         wsConn.onmessage = function(message) {
             var data = JSON.parse(message.data);
@@ -206,6 +211,11 @@ const startListener = function() {
             //alert(!rleData || rleData.length)
 
             var drawFor = function (darkness, amount) {
+                //drawForPx++;
+                //if (drawForPx === Math.ceil(TIMES_BY)+1) {
+                //    drawForPx = (Math.ceil(TIMES_BY) - 1) || 1;
+                //}
+
                 try {
                     ctx.putImageData(
                         lineData[darkness],
@@ -213,7 +223,7 @@ const startListener = function() {
                         Math.ceil((data.top + y) * TIMES_BY),
                         0, 0,
                         Math.ceil(TIMES_BY * amount),
-                        Math.ceil(TIMES_BY)
+                        drawForPx
                     );
                 } catch (e) {
                     alert("ERROR DRAWFOR: " + darkness + " " + amount + " " + lineData.length + " " + lineData[darkness]);
