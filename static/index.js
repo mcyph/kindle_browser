@@ -2,7 +2,7 @@
 
 var active = false;
 
-var IGNORE_ABOVE = 1300;
+var IGNORE_ABOVE = 1350;
 var SCREEN_WIDTH = 1236; // NOTE ME!
 //var SCREEN_WIDTH = 800*3;
 
@@ -248,7 +248,7 @@ const startListener = function() {
                 //alert("NEW "+amountToGo);
                 var currentY = 0;
                 while (amountToGo > 0) {
-                    var amountThisTime = 100;
+                    var amountThisTime = amountToGo > 50 ? 50 : amountToGo;
                     ctx.putImageData(
                         lineData[longestShade],
                         Math.ceil(data.left * TIMES_BY),
