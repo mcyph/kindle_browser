@@ -65,13 +65,14 @@ def _check_queue(x_display, to_client_cursor_queue):
             #with ScreenStateContext.lock:
             #print("MotionNotify send", event.root_x, event.root_y)
 
-            to_client_cursor_queue.put({
-                'type': 'cursor_move',
-                'absolute_x': event.root_x,
-                'absolute_y': event.root_y,
-                'relative_x': event.root_x,
-                'relative_y': event.root_y,
-            })
+            if event is not None:
+                to_client_cursor_queue.put({
+                    'type': 'cursor_move',
+                    'absolute_x': event.root_x,
+                    'absolute_y': event.root_y,
+                    'relative_x': event.root_x,
+                    'relative_y': event.root_y,
+                })
 
             cursor_data = x_cursor.getImageAsBase64()
             if cursor_data != old_cursor_data:
@@ -87,9 +88,21 @@ def _check_queue(x_display, to_client_cursor_queue):
         time.sleep(0.05)
 
 
+def _cursor_poller():
+    # Make sure cursor image is updated periodically
+    # TODO: Use events from xlib (if possible)
+    while True:
+        time.sleep(0.5)
+        q.put(None)
+
+
 def run_motion_change_event_listener(x_display, to_client_cursor_queue):
     t = threading.Thread(target=_check_queue,
                          args=[x_display, to_client_cursor_queue])
+    t.start()
+
+    t = threading.Thread(target=_cursor_poller,
+                         args=[])
     t.start()
 
     def record_callback(reply):
