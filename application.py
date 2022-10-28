@@ -15,6 +15,8 @@ from src.ScreenStateContext import ScreenStateContext
 
 HOST = '0.0.0.0'
 PORT = 8000
+X_DISPLAY = ':1'
+CHROMIUM_PROFILE_DIR = '/home/david/kindle_chromium'
 
 to_client_queue = Queue()
 to_client_cursor_queue = Queue()
@@ -57,14 +59,14 @@ def monitor_client_queue():
 
         try:
             if command['type'] == 'mouseMove':
-                system(f"DISPLAY=:2 xdotool mousemove {x} {y}")
-                system(f"DISPLAY=:2 xdotool click 1")
+                system(f"DISPLAY={X_DISPLAY} xdotool mousemove {x} {y}")
+                system(f"DISPLAY={X_DISPLAY} xdotool click 1")
             elif command['type'] == 'mouseDown':
-                system(f"DISPLAY=:2 xdotool mousemove {x} {y}")
-                #system(f"DISPLAY=:2 xdotool click 1")
+                system(f"DISPLAY={X_DISPLAY} xdotool mousemove {x} {y}")
+                #system(f"DISPLAY={X_DISPLAY} xdotool click 1")
             # elif command['type'] in ('mouseUp', 'click') and self.mouse_down:
-            #    system(f"DISPLAY=:2 xdotool mousemove {x} {y}")
-            #    system(f"DISPLAY=:2 xdotool mouseup")
+            #    system(f"DISPLAY={X_DISPLAY} xdotool mousemove {x} {y}")
+            #    system(f"DISPLAY={X_DISPLAY} xdotool mouseup")
             elif command['type'] == 'command':
                 # * Space:
                 # KeyEvent: {'type': 'command', 'command': 'keyevent', 'keyEventType': 'keydown', 'altKey': False, 'shiftKey': False, 'ctrlKey': False, 'charCode': 0, 'keyCode': 32}
@@ -106,22 +108,22 @@ def monitor_client_queue():
                                              if command['shiftKey']
                                              else chr(command['keyCode']).lower())  # charCode??
 
-                        system(f"DISPLAY=:2 xdotool key {'+'.join(modifiers)}")
+                        system(f"DISPLAY={X_DISPLAY} xdotool key {'+'.join(modifiers)}")
 
                 elif command['command'] == 'scroll_up':
                     print("scroll up")
-                    system(f"DISPLAY=:2 xdotool key Page_Up")
+                    system(f"DISPLAY={X_DISPLAY} xdotool key Page_Up")
                 elif command['command'] == 'scroll_down':
                     print("scroll down")
-                    system(f"DISPLAY=:2 xdotool key Page_Down")
+                    system(f"DISPLAY={X_DISPLAY} xdotool key Page_Down")
                 elif command['command'] == 'forward':
-                    system(f"DISPLAY=:2 xdotool key alt+Right")
+                    system(f"DISPLAY={X_DISPLAY} xdotool key alt+Right")
                 elif command['command'] == 'back':
-                    system(f"DISPLAY=:2 xdotool key alt+Left")
+                    system(f"DISPLAY={X_DISPLAY} xdotool key alt+Left")
                 elif command['command'] == 'refresh':
-                    system(f"DISPLAY=:2 xdotool key F5")
+                    system(f"DISPLAY={X_DISPLAY} xdotool key F5")
                 elif command['command'] == 'top':
-                    system(f"DISPLAY=:2 xdotool key Home")
+                    system(f"DISPLAY={X_DISPLAY} xdotool key Home")
                 elif command['command'] == 'navigate':
                     # browser.ExecuteJavascript('location.href = %s' % json.dumps(command['url']))
                     # browser.LoadUrl(command['url'])
@@ -151,26 +153,9 @@ thread.start()
 
 
 def main():
-    X_DISPLAY = ':2'
-    CHROMIUM_PROFILE_DIR = '/home/david/kindle_chromium'
-
     proc = subprocess.Popen([
-        'Xephyr',
-        #'Xnest',
-        #'-br',
-        #'-render', 'gray',
-        #'-dpi', '400',
-        #'-ac',
-        #'-noreset',
-        '-glamor',
-        #'-keybd', ',,,xkbmodel=evdev,xkblayout=de',
-        #'-mouse',
-
-        #'-depth', '24',
-        #'-geometry', f'{ScreenStateContext.screen_x}x{ScreenStateContext.screen_y}',
-
-        '-screen', f'{ScreenStateContext.screen_x}x{ScreenStateContext.screen_y}', # x16
-        X_DISPLAY,
+        'chromium-browser',
+        f"--user-data-dir='{CHROMIUM_PROFILE_DIR}'"
     ], shell=False)
     pid = proc.pid
 
@@ -184,14 +169,14 @@ def main():
             window1_x_id = int(subprocess.check_output([
                 'xdotool', 'search', '--any',
                 '--pid', str(pid),
-                '--name',  # 'Xnest',
-                'Xephyr on '
+                '--name', '"- Chromium"'
             ]).decode('ascii').strip().split('\n')[-1])
             break
         except:
             pass
 
     system(f'xdotool windowmove {window1_x_id} 0 0')
+    system(f'xdotool windowsize {window1_x_id} {ScreenStateContext.screen_x} {ScreenStateContext.screen_y}')
 
     background = Image.new("L", (ScreenStateContext.screen_x, ScreenStateContext.screen_y), (255,))
     LegacyWebSocket.background = background
@@ -201,11 +186,6 @@ def main():
                                       window1_x_id, X_DISPLAY))
     #xdamage_test.main(to_client_queue, pid)
     thread_2.start()
-
-    #system(f"DISPLAY={X_DISPLAY} onboard &")
-    system(f"DISPLAY={X_DISPLAY} matchbox-window-manager &")
-    system(f"DISPLAY={X_DISPLAY} firefox -P Xephyr -width {ScreenStateContext.screen_x} -height {ScreenStateContext.screen_y} &")
-    #system(f"DISPLAY={X_DISPLAY} chromium-browser --user-data-dir='{CHROMIUM_PROFILE_DIR}' &")
 
     #loop = asyncio.get_event_loop()
     app = aiohttp.web.Application()
