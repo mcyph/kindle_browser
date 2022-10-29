@@ -54,15 +54,20 @@ def monitor_client_queue():
     while True:
         command = from_client_queue.get()
         if command['type'] not in ('command', 'keyevent'):
-            x = command['left']
-            y = command['top']
+            x = round(command['left'])
+            y = round(command['top'])
+            window_x, window_y = subprocess.check_output([
+                "xdotool", "getwindowgeometry", str(WINDOW_ID)
+            ]).decode('ascii').split('Position: ')[1].split()[0].split(',')
+            window_x = int(window_x)
+            window_y = int(window_y)
 
         try:
             if command['type'] == 'mouseMove':
-                system(f"DISPLAY={X_DISPLAY} xdotool mousemove {x} {y}")
+                system(f"DISPLAY={X_DISPLAY} xdotool mousemove {window_x+x} {window_y+y}")
                 system(f"DISPLAY={X_DISPLAY} xdotool click 1")
             elif command['type'] == 'mouseDown':
-                system(f"DISPLAY={X_DISPLAY} xdotool mousemove {x} {y}")
+                system(f"DISPLAY={X_DISPLAY} xdotool mousemove {window_x+x} {window_y+y}")
                 #system(f"DISPLAY={X_DISPLAY} xdotool click 1")
             # elif command['type'] in ('mouseUp', 'click') and self.mouse_down:
             #    system(f"DISPLAY={X_DISPLAY} xdotool mousemove {x} {y}")
@@ -166,19 +171,25 @@ def main():
     thread = threading.Thread(target=monitor_client_queue,
                               args=())
     thread.start()
+    time.sleep(5)
 
     while True:
         try:
             time.sleep(0.5)
             window1_x_id = int(subprocess.check_output([
-                'xdotool', 'search', '--any',
-                '--pid', str(pid),
-                '--name', '"- Chromium"'
+                'xdotool', 'getactivewindow',
+
+                #'xdotool', 'search', '--any',
+                #'--pid', str(pid),
+                #'--name', '"- Chromium"'
             ]).decode('ascii').strip().split('\n')[-1])
             break
         except:
             pass
 
+    global WINDOW_ID
+    WINDOW_ID = window1_x_id
+    time.sleep(5)
     system(f'xdotool windowmove {window1_x_id} 0 0')
     system(f'xdotool windowsize {window1_x_id} {ScreenStateContext.screen_x} {ScreenStateContext.screen_y}')
 

@@ -52,7 +52,9 @@ record_dpy = display.Display()
 q = Queue()
 
 
-def _check_queue(x_display, to_client_cursor_queue):
+def _check_queue(x_display, window1_x_id, to_client_cursor_queue):
+    d = display.Display()
+    window = d.create_resource_object('window', window1_x_id)
     x_cursor = Xcursor(display=x_display.encode('ascii'))
     old_cursor_data = None
 
@@ -66,12 +68,15 @@ def _check_queue(x_display, to_client_cursor_queue):
             #print("MotionNotify send", event.root_x, event.root_y)
 
             if event is not None:
+                geometry = window.get_geometry()
+                #print(event, dir(event), geometry)
+
                 to_client_cursor_queue.put({
                     'type': 'cursor_move',
-                    'absolute_x': event.root_x,
-                    'absolute_y': event.root_y,
-                    'relative_x': event.root_x,
-                    'relative_y': event.root_y,
+                    'absolute_x': event.root_x-geometry.x,
+                    'absolute_y': event.root_y-geometry.y,
+                    'relative_x': event.root_x-geometry.x,
+                    'relative_y': event.root_y-geometry.y,
                 })
 
             cursor_data = x_cursor.getImageAsBase64()
@@ -96,9 +101,9 @@ def _cursor_poller():
         q.put(None)
 
 
-def run_motion_change_event_listener(x_display, to_client_cursor_queue):
+def run_motion_change_event_listener(x_display, window1_x_id, to_client_cursor_queue):
     t = threading.Thread(target=_check_queue,
-                         args=[x_display, to_client_cursor_queue])
+                         args=[x_display, window1_x_id, to_client_cursor_queue])
     t.start()
 
     t = threading.Thread(target=_cursor_poller,
