@@ -6,6 +6,7 @@ import aiohttp.web
 from os import system
 from PIL import Image
 from queue import Queue
+from Xlib import display
 
 from src import LegacyWebSocket
 from src import x_damage_events
@@ -50,16 +51,16 @@ async def websocket_handler(request):
 
 
 def monitor_client_queue():
+    d = display.Display()
+    window = d.create_resource_object('window', WINDOW_ID)
+    from src.x_motion_events import get_absolute_geometry
+
     while True:
         command = from_client_queue.get()
         if command['type'] not in ('command', 'keyevent'):
             x = round(command['left'])
             y = round(command['top'])
-            window_x, window_y = subprocess.check_output([
-                "xdotool", "getwindowgeometry", str(WINDOW_ID)
-            ]).decode('ascii').split('Position: ')[1].split()[0].split(',')
-            window_x = int(window_x)
-            window_y = int(window_y)
+            window_x, window_y = get_absolute_geometry(window)
 
         try:
             if command['type'] == 'mouseMove':
@@ -167,9 +168,6 @@ def main():
     ], shell=False)
     pid = proc.pid
 
-    thread = threading.Thread(target=monitor_client_queue,
-                              args=())
-    thread.start()
     time.sleep(5)
 
     while True:
@@ -194,6 +192,10 @@ def main():
 
     background = Image.new("L", (ScreenStateContext.screen_x, ScreenStateContext.screen_y), (255,))
     LegacyWebSocket.background = background
+
+    thread = threading.Thread(target=monitor_client_queue,
+                              args=())
+    thread.start()
 
     thread_2 = threading.Thread(target=x_damage_events.main,
                                 args=(to_client_queue, to_client_cursor_queue,
