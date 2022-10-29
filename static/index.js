@@ -70,28 +70,31 @@ const startListener = function() {
         toggleNavMenu();
     };
 
+    var MOUSE_OFFSET_X = -15;
+    var MOUSE_OFFSET_Y = -15;
+
     document.addEventListener('mousemove', function(e) {
         if (e.pageY < IGNORE_ABOVE) {
-            sendJSON({type: 'mouseMove', left: e.pageX, top: e.pageY});
-            updateCursorPosition(e.pageX, e.pageY);
+            sendJSON({type: 'mouseMove', left: e.pageX+MOUSE_OFFSET_X, top: e.pageY+MOUSE_OFFSET_Y});
+            //updateCursorPosition(e.pageX+MOUSE_OFFSET_X, e.pageY+MOUSE_OFFSET_Y);
         }
     });
     document.addEventListener('mousedown', function(e) {
         if (e.pageY < IGNORE_ABOVE) {
             //sendJSON({ type: 'mouseDown', left: e.pageX, top: e.pageY });
-            updateCursorPosition(e.pageX, e.pageY);
+            //updateCursorPosition(e.pageX+MOUSE_OFFSET_X, e.pageY+MOUSE_OFFSET_Y);
         }
     });
     document.addEventListener('mouseup', function(e) {
         if (e.pageY < IGNORE_ABOVE) {
             //sendJSON({type: 'mouseUp', left: e.pageX, top: e.pageY});
-            updateCursorPosition(e.pageX, e.pageY);
+            //updateCursorPosition(e.pageX+MOUSE_OFFSET_X, e.pageY+MOUSE_OFFSET_Y);
         }
     });
     document.addEventListener('click', function(e) {
         if (e.pageY < IGNORE_ABOVE) {
             //sendJSON({type: 'click', left: e.pageX, top: e.pageY});
-            updateCursorPosition(e.pageX, e.pageY);
+            //updateCursorPosition(e.pageX+MOUSE_OFFSET_X, e.pageY+MOUSE_OFFSET_Y);
         }
     });
     /*document.onscroll = function(e) {

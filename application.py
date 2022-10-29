@@ -66,9 +66,11 @@ def monitor_client_queue():
 
         try:
             if command['type'] == 'mouseMove':
+                system(f"xdotool windowactivate {WINDOW_ID}")
                 system(f"xdotool mousemove {window_x+x} {window_y+y}")
                 system(f"xdotool click 1")
             elif command['type'] == 'mouseDown':
+                system(f"xdotool windowactivate {WINDOW_ID}")
                 system(f"xdotool mousemove {window_x+x} {window_y+y}")
                 #system(f"xdotool click 1")
             # elif command['type'] in ('mouseUp', 'click') and self.mouse_down:
@@ -115,21 +117,28 @@ def monitor_client_queue():
                                              if command['shiftKey']
                                              else chr(command['keyCode']).lower())  # charCode??
 
+                        system(f"xdotool windowactivate {WINDOW_ID}")
                         system(f"xdotool key {'+'.join(modifiers)}")
 
                 elif command['command'] == 'scroll_up':
                     print("scroll up")
+                    system(f"xdotool windowactivate {WINDOW_ID}")
                     system(f"xdotool key Page_Up")
                 elif command['command'] == 'scroll_down':
                     print("scroll down")
+                    system(f"xdotool windowactivate {WINDOW_ID}")
                     system(f"xdotool key Page_Down")
                 elif command['command'] == 'forward':
+                    system(f"xdotool windowactivate {WINDOW_ID}")
                     system(f"xdotool key alt+Right")
                 elif command['command'] == 'back':
+                    system(f"xdotool windowactivate {WINDOW_ID}")
                     system(f"xdotool key alt+Left")
                 elif command['command'] == 'refresh':
+                    system(f"xdotool windowactivate {WINDOW_ID}")
                     system(f"xdotool key F5")
                 elif command['command'] == 'top':
+                    system(f"xdotool windowactivate {WINDOW_ID}")
                     system(f"xdotool key Home")
                 elif command['command'] == 'navigate':
                     # browser.ExecuteJavascript('location.href = %s' % json.dumps(command['url']))
