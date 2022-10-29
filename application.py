@@ -15,7 +15,6 @@ from src.ScreenStateContext import ScreenStateContext
 
 HOST = '0.0.0.0'
 PORT = 8000
-X_DISPLAY = ':1'
 CHROMIUM_PROFILE_DIR = '/home/david/kindle_chromium'
 
 to_client_queue = Queue()
@@ -64,14 +63,14 @@ def monitor_client_queue():
 
         try:
             if command['type'] == 'mouseMove':
-                system(f"DISPLAY={X_DISPLAY} xdotool mousemove {window_x+x} {window_y+y}")
-                system(f"DISPLAY={X_DISPLAY} xdotool click 1")
+                system(f"xdotool mousemove {window_x+x} {window_y+y}")
+                system(f"xdotool click 1")
             elif command['type'] == 'mouseDown':
-                system(f"DISPLAY={X_DISPLAY} xdotool mousemove {window_x+x} {window_y+y}")
-                #system(f"DISPLAY={X_DISPLAY} xdotool click 1")
+                system(f"xdotool mousemove {window_x+x} {window_y+y}")
+                #system(f"xdotool click 1")
             # elif command['type'] in ('mouseUp', 'click') and self.mouse_down:
-            #    system(f"DISPLAY={X_DISPLAY} xdotool mousemove {x} {y}")
-            #    system(f"DISPLAY={X_DISPLAY} xdotool mouseup")
+            #    system(f"xdotool mousemove {x} {y}")
+            #    system(f"xdotool mouseup")
             elif command['type'] == 'command':
                 # * Space:
                 # KeyEvent: {'type': 'command', 'command': 'keyevent', 'keyEventType': 'keydown', 'altKey': False, 'shiftKey': False, 'ctrlKey': False, 'charCode': 0, 'keyCode': 32}
@@ -113,22 +112,22 @@ def monitor_client_queue():
                                              if command['shiftKey']
                                              else chr(command['keyCode']).lower())  # charCode??
 
-                        system(f"DISPLAY={X_DISPLAY} xdotool key {'+'.join(modifiers)}")
+                        system(f"xdotool key {'+'.join(modifiers)}")
 
                 elif command['command'] == 'scroll_up':
                     print("scroll up")
-                    system(f"DISPLAY={X_DISPLAY} xdotool key Page_Up")
+                    system(f"xdotool key Page_Up")
                 elif command['command'] == 'scroll_down':
                     print("scroll down")
-                    system(f"DISPLAY={X_DISPLAY} xdotool key Page_Down")
+                    system(f"xdotool key Page_Down")
                 elif command['command'] == 'forward':
-                    system(f"DISPLAY={X_DISPLAY} xdotool key alt+Right")
+                    system(f"xdotool key alt+Right")
                 elif command['command'] == 'back':
-                    system(f"DISPLAY={X_DISPLAY} xdotool key alt+Left")
+                    system(f"xdotool key alt+Left")
                 elif command['command'] == 'refresh':
-                    system(f"DISPLAY={X_DISPLAY} xdotool key F5")
+                    system(f"xdotool key F5")
                 elif command['command'] == 'top':
-                    system(f"DISPLAY={X_DISPLAY} xdotool key Home")
+                    system(f"xdotool key Home")
                 elif command['command'] == 'navigate':
                     # browser.ExecuteJavascript('location.href = %s' % json.dumps(command['url']))
                     # browser.LoadUrl(command['url'])
@@ -198,7 +197,7 @@ def main():
 
     thread_2 = threading.Thread(target=x_damage_events.main,
                                 args=(to_client_queue, to_client_cursor_queue,
-                                      window1_x_id, X_DISPLAY))
+                                      window1_x_id))
     #xdamage_test.main(to_client_queue, pid)
     thread_2.start()
 

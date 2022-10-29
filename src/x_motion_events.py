@@ -73,10 +73,10 @@ def get_absolute_geometry(win):
     return x, y
 
 
-def _check_queue(x_display, window1_x_id, to_client_cursor_queue):
+def _check_queue(window1_x_id, to_client_cursor_queue):
     d = display.Display()
     window = d.create_resource_object('window', window1_x_id)
-    x_cursor = Xcursor(display=x_display.encode('ascii'))
+    x_cursor = Xcursor()
     old_cursor_data = None
 
     while True:
@@ -121,9 +121,9 @@ def _cursor_poller():
         q.put(None)
 
 
-def run_motion_change_event_listener(x_display, window1_x_id, to_client_cursor_queue):
+def run_motion_change_event_listener(window1_x_id, to_client_cursor_queue):
     t = threading.Thread(target=_check_queue,
-                         args=[x_display, window1_x_id, to_client_cursor_queue])
+                         args=[window1_x_id, to_client_cursor_queue])
     t.start()
 
     t = threading.Thread(target=_cursor_poller,
