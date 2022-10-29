@@ -155,7 +155,11 @@ thread.start()
 def main():
     proc = subprocess.Popen([
         'chromium-browser',
-        f"--user-data-dir='{CHROMIUM_PROFILE_DIR}'"
+        f"--user-data-dir='{CHROMIUM_PROFILE_DIR}'",
+        "--disable-features=UseChromeOSDirectVideoDecoder",
+        "--enable-features=VaapiVideoDecoder",
+        "--ignore-gpu-blocklist",
+        #"--use-gl=desktop",
     ], shell=False)
     pid = proc.pid
 
