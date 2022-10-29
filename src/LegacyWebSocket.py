@@ -7,6 +7,8 @@ from _thread import allocate_lock
 from twisted.internet import reactor
 from twisted.internet.protocol import Factory, Protocol
 
+from src.Timer import Timer
+
 
 connections = {}
 
@@ -49,9 +51,10 @@ class LegacyWebSocket(Protocol):
         else:
             queue = self.queue
 
-        if not queue.empty():
+        while not queue.empty():
             i_data = queue.get()
             try:
+                #with Timer(f'LegacyWebSocket loop {i_data.get("type", "unknown")}'):
                 self.send_data(json.dumps(i_data, ensure_ascii=True).encode('ascii'))
             except KeyError:
                 queue.put(i_data)

@@ -53,8 +53,10 @@ WINDOW_LOCK = thread.allocate_lock()
 def get_image_from_win(win, pt_w, pt_h, pt_x=0, pt_y=0):
     #print(pt_w, pt_h, pt_x, pt_y)
     try:
-        raw = win.get_image(pt_x, pt_y, pt_w, pt_h, X.ZPixmap, 0xffffffff)
-        image = Image.frombytes("RGB", (pt_w, pt_h), raw.data, "raw", "BGRX")
+        with Timer('get_image_from_win win.get_image'):
+            raw = win.get_image(pt_x, pt_y, pt_w, pt_h, X.ZPixmap, 0xffffffff)
+        with Timer('get_image_from_win Image.from_bytes'):
+            image = Image.frombytes("RGB", (pt_w, pt_h), raw.data, "raw", "BGRX")
         return image
     except Exception:
         traceback.print_exc()
@@ -74,12 +76,12 @@ def check_ext(disp):
 
 
 def send_if_changed(win, to_client_queue):
-    with Timer('send_if_changed get_image_from_win'):
-        x1, y1, x2, y2 = ScreenStateContext.dirty_rect
-        image = get_image_from_win(win, x2-x1, y2-y1, x1, y1)
-        if not image:
-            ScreenStateContext.reset_dirty_rect()
-            return
+    #with Timer('send_if_changed get_image_from_win'):
+    x1, y1, x2, y2 = ScreenStateContext.dirty_rect
+    image = get_image_from_win(win, x2-x1, y2-y1, x1, y1)
+    if not image:
+        ScreenStateContext.reset_dirty_rect()
+        return
 
     image = image.convert('L', dither=Image.NONE)
 
@@ -144,7 +146,7 @@ def _image_changed_thread(to_client_queue):
             import traceback
             traceback.print_exc()
 
-        time.sleep(0.1)
+        time.sleep(0.05)
 
 
 #def _send_full_repaints_thread(to_client_queue, window1):
@@ -222,5 +224,5 @@ def main(to_client_queue, to_client_cursor_queue, window1_x_id):
 
             start_time = time.time()
 
-        time.sleep(0.1)
+        time.sleep(0.05)
 

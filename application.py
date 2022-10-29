@@ -8,6 +8,7 @@ from PIL import Image
 from queue import Queue
 from Xlib import display
 
+from src.Timer import Timer
 from src import LegacyWebSocket
 from src import x_damage_events
 from src.LegacyWebSocket import main as wsmain
@@ -39,9 +40,10 @@ async def websocket_handler(request):
             #if data['type'] == 'websocket.disconnect':
             #    break
             i_data = to_client_queue.get()
-            await ws.send_str(json.dumps(i_data,
-                                         ensure_ascii=False,
-                                         separators=(',', ':')))
+            with Timer(f'websocket_handler ws.send_str {i_data.get("type", "unknown")}'):
+                await ws.send_str(json.dumps(i_data,
+                                             ensure_ascii=False,
+                                             separators=(',', ':')))
     except KeyError:
         if i_data is not None:
             to_client_queue.put(i_data)
