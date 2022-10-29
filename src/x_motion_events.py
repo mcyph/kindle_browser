@@ -49,7 +49,28 @@ from src.pyxcursor.pyxcursor import Xcursor
 
 local_dpy = display.Display()
 record_dpy = display.Display()
+root = local_dpy.screen().root
 q = Queue()
+
+
+def get_absolute_geometry(win):
+    """
+    Returns the (x, y, height, width) of a window relative to the top-left
+    of the screen.
+
+    https://stackoverflow.com/questions/12775136/get-window-position-and-size-in-python-with-xlib
+    """
+    geom = win.get_geometry()
+    (x, y) = (geom.x, geom.y)
+    while True:
+        parent = win.query_tree().parent
+        pgeom = parent.get_geometry()
+        x += pgeom.x
+        y += pgeom.y
+        if parent.id == root.id:
+            break
+        win = parent
+    return x, y
 
 
 def _check_queue(x_display, window1_x_id, to_client_cursor_queue):
@@ -68,15 +89,14 @@ def _check_queue(x_display, window1_x_id, to_client_cursor_queue):
             #print("MotionNotify send", event.root_x, event.root_y)
 
             if event is not None:
-                geometry = window.get_geometry()
-                #print(event, dir(event), geometry)
-
+                geometry_x, geometry_y = get_absolute_geometry(window)
+                #print(geometry_x, geometry_y)
                 to_client_cursor_queue.put({
                     'type': 'cursor_move',
-                    'absolute_x': event.root_x-geometry.x,
-                    'absolute_y': event.root_y-geometry.y,
-                    'relative_x': event.root_x-geometry.x,
-                    'relative_y': event.root_y-geometry.y,
+                    'absolute_x': event.root_x-geometry_x,
+                    'absolute_y': event.root_y-geometry_y,
+                    'relative_x': event.root_x-geometry_x,
+                    'relative_y': event.root_y-geometry_y,
                 })
 
             cursor_data = x_cursor.getImageAsBase64()

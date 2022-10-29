@@ -171,8 +171,8 @@ const startListener = function() {
                     if (cursorId !== useCursorId) {
                         return;
                     }
-                    data['relative_y'] -= 28; // HACK!
-                    data['relative_x'] -= 5; // HACK!
+                    //data['relative_y'] -= 28; // HACK!
+                    //data['relative_x'] -= 5; // HACK!
                     updateCursorPosition(
                         data['relative_x'] * (1 / TIMES_EVENTS_BY),
                         data['relative_y'] * (1 / TIMES_EVENTS_BY)
