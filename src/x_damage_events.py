@@ -213,10 +213,10 @@ def main(to_client_queue, to_client_cursor_queue, window1_x_id):
                 import traceback
                 traceback.print_exc()
 
-        if time.time() - start_time > 3:
+        if time.time() - start_time > 60:
             # HACK: On raspberry pi it seems events stop working randomly
             with WINDOW_LOCK:
-                old_window1 = window1
+                #old_window1 = window1
                 old_d = d
                 window1, d = get_display()
                 #old_window1.destroy()

@@ -25,7 +25,7 @@ class LegacyWebSocket(Protocol):
     def connectionMade(self):
         if self not in self.sockets:
             self.sockets[self] = {}
-        self.transport.setTcpNoDelay(True)
+        self.transport.setTcpNoDelay(False)
 
     def dataReceived(self, msg):
         global connections
