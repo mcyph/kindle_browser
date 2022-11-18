@@ -32,6 +32,8 @@ import base64
 import threading
 import traceback
 import subprocess
+# NOTE: This next line is needed to enable threading!
+import Xlib.threaded
 try:
     import thread
 except ModuleNotFoundError:
