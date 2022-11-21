@@ -140,99 +140,142 @@ const startListener = function() {
     var cursorId = 0;
     //ctx.scale(0.53, 0.55);
 
-    for (var __=0; __<4; __++) {
-        var wsConn = new WebSocket('ws://' + window.location.hostname + ":8080/ws");
-        var wsCursorConn = new WebSocket('ws://' + window.location.hostname + ":8080/wsCursor");
+    var wsConn = new WebSocket('ws://' + window.location.hostname + ":8080/ws");
+    var wsCursorConn = new WebSocket('ws://' + window.location.hostname + ":8080/wsCursor");
 
-        wsConn.onopen = function() {
-            setMessage("");
-            //wsConn.send('firstData!');
-            sendJSON({type: 'command', command: 'initialFrame'});
-        };
-        wsConn.onclose = function(e) {
-            setMessage("Disconn. " + JSON.stringify(e));
-            active = false;
-        };
-        wsConn.onerror = function(e, code) {
-            setMessage("ERROR " + code + e);
-        };
+    wsConn.onopen = function() {
+        setMessage("");
+        //wsConn.send('firstData!');
+        sendJSON({type: 'command', command: 'initialFrame'});
+    };
+    wsConn.onclose = function(e) {
+        setMessage("Disconn. " + JSON.stringify(e));
+        active = false;
+    };
+    wsConn.onerror = function(e, code) {
+        setMessage("ERROR " + code + e);
+    };
 
-        wsCursorConn.onopen = function() {
-        };
-        wsCursorConn.onclose = function(e) {
-        };
-        wsCursorConn.onerror = function(e, code) {
-        };
+    wsCursorConn.onopen = function() {
+    };
+    wsCursorConn.onclose = function(e) {
+    };
+    wsCursorConn.onerror = function(e, code) {
+    };
 
-        wsCursorConn.onmessage = function(message) {
-            var data = JSON.parse(message.data);
+    var cursorMoveData = null;
 
-            if (data['type'] === 'cursor_move') {
-                var useCursorId = ++cursorId;
+    wsCursorConn.onmessage = function(message) {
+        var data = JSON.parse(message.data);
 
-                setTimeout(function () {
-                    if (cursorId !== useCursorId) {
-                        return;
-                    }
-                    //data['relative_y'] -= 28; // HACK!
-                    //data['relative_x'] -= 5; // HACK!
-                    updateCursorPosition(
-                        data['relative_x'] * (1 / TIMES_EVENTS_BY),
-                        data['relative_y'] * (1 / TIMES_EVENTS_BY)
-                    );
-                }, 0);
-                return;
-            } else if (data['type'] === 'cursor_change') {
-                var cursor = document.getElementById('cursor');
-                cursor.src = data['data'];
+        if (data['type'] === 'cursor_move') {
+            var useCursorId = ++cursorId;
+            cursorMoveData = data;
+
+            setTimeout(function () {
+                if (cursorId !== useCursorId) {
+                    return;
+                }
+                //data['relative_y'] -= 28; // HACK!
+                //data['relative_x'] -= 5; // HACK!
+                updateCursorPosition(
+                    data['relative_x'] * (1 / TIMES_EVENTS_BY),
+                    data['relative_y'] * (1 / TIMES_EVENTS_BY)
+                );
+                cursorMoveData = null;
+            }, 500);
+            return;
+        } else if (data['type'] === 'cursor_change') {
+            var cursor = document.getElementById('cursor');
+            cursor.src = data['data'];
+        }
+    };
+
+    var updateCursorPosition = function(x, y) {
+        var cursor = document.getElementById('cursor');
+        cursor.style.left = x + 'px';
+        cursor.style.top = y + 'px';
+    };
+
+    var drawForPx = 3;
+    var iteration = 0;
+
+    wsConn.onmessage = function(message) {
+        var data = JSON.parse(message.data);
+
+        var x = 0;
+        var y = 0;
+        var total = 0;
+        var darkness, runsFor;
+        var rleData = atob(data.imageData);
+        var width = data.width;
+        var height = data.height;
+        var SINGLE_VALUES_FROM = Math.floor((255 / DIVISOR)) + 1;
+
+        var drawFor = function (darkness, amount) {
+            //drawForPx++;
+            //if (drawForPx === Math.ceil(TIMES_BY)+1) {
+            //    drawForPx = (Math.ceil(TIMES_BY) - 1) || 1;
+            //}
+            try {
+                ctx.putImageData(
+                    lineData[darkness],
+                    Math.ceil((data.left + x) * TIMES_BY),
+                    Math.ceil((data.top + y) * TIMES_BY),
+                    0, 0,
+                    Math.ceil(TIMES_BY * amount),
+                    drawForPx
+                );
+            } catch (e) {
+                alert("ERROR DRAWFOR: " + darkness + " " + amount + " " + lineData.length + " " + lineData[darkness]);
+                throw e;
             }
         };
 
-        var updateCursorPosition = function(x, y) {
-            var cursor = document.getElementById('cursor');
-            cursor.style.left = x + 'px';
-            cursor.style.top = y + 'px';
-        };
+        // Get the most common shade
+        var counts = {};
+        for (var i = 0; i < rleData.length; i++) {
+            var j = rleData.charCodeAt(i);
+            if (j >= SINGLE_VALUES_FROM) {
+                darkness = j - SINGLE_VALUES_FROM;
+                runsFor = 1;
+            } else {
+                darkness = j;
+                runsFor = rleData.charCodeAt(i + 1);
+                i += 1;
+            }
+            counts[darkness] = (counts[darkness] || 0) + runsFor;
+        }
+        var longestRun = 0;
+        var longestShade = null;
 
-        var drawForPx = 3;
-        var iteration = 0;
+        for (var k in counts) {
+            if (counts[k] > longestRun) {
+                longestRun = counts[k];
+                longestShade = parseInt(k);
+            }
+        }
 
-        wsConn.onmessage = function(message) {
-            var data = JSON.parse(message.data);
+        try {
+            // Fill in the most common shade as background as a single operation
+            var amountToGo = Math.ceil(TIMES_BY * data.height);
+            //alert("NEW "+amountToGo);
+            var currentY = 0;
+            while (amountToGo > 0) {
+                var amountThisTime = amountToGo > IMAGE_DATA_HEIGHT ? IMAGE_DATA_HEIGHT : amountToGo;
+                ctx.putImageData(
+                    lineData[longestShade],
+                    Math.ceil(data.left * TIMES_BY),
+                    currentY + Math.ceil(data.top * TIMES_BY),
+                    0, 0,
+                    Math.ceil(TIMES_BY * data.width),
+                    amountThisTime
+                );
+                currentY += amountThisTime;
+                amountToGo -= amountThisTime;
+            }
+            //alert("BREAK "+longestShade);
 
-            var x = 0;
-            var y = 0;
-            var total = 0;
-            var darkness, runsFor;
-            var rleData = atob(data.imageData);
-            var width = data.width;
-            var height = data.height;
-            var SINGLE_VALUES_FROM = Math.floor((255 / DIVISOR)) + 1;
-
-            //alert(!rleData || rleData.length)
-
-            var drawFor = function (darkness, amount) {
-                //drawForPx++;
-                //if (drawForPx === Math.ceil(TIMES_BY)+1) {
-                //    drawForPx = (Math.ceil(TIMES_BY) - 1) || 1;
-                //}
-                try {
-                    ctx.putImageData(
-                        lineData[darkness],
-                        Math.ceil((data.left + x) * TIMES_BY),
-                        Math.ceil((data.top + y) * TIMES_BY),
-                        0, 0,
-                        Math.ceil(TIMES_BY * amount),
-                        drawForPx
-                    );
-                } catch (e) {
-                    alert("ERROR DRAWFOR: " + darkness + " " + amount + " " + lineData.length + " " + lineData[darkness]);
-                    throw e;
-                }
-            };
-
-            // Get the most common shade
-            var counts = {};
             for (var i = 0; i < rleData.length; i++) {
                 var j = rleData.charCodeAt(i);
                 if (j >= SINGLE_VALUES_FROM) {
@@ -243,80 +286,50 @@ const startListener = function() {
                     runsFor = rleData.charCodeAt(i + 1);
                     i += 1;
                 }
-                counts[darkness] = (counts[darkness] || 0) + runsFor;
-            }
-            var longestRun = 0;
-            var longestShade = null;
+                total += runsFor;
 
-            for (var k in counts) {
-                if (counts[k] > longestRun) {
-                    longestRun = counts[k];
-                    longestShade = parseInt(k);
-                }
-            }
-
-            try {
-                // Fill in the most common shade as background as a single operation
-                var amountToGo = Math.ceil(TIMES_BY * data.height);
-                //alert("NEW "+amountToGo);
-                var currentY = 0;
-                while (amountToGo > 0) {
-                    var amountThisTime = amountToGo > IMAGE_DATA_HEIGHT ? IMAGE_DATA_HEIGHT : amountToGo;
-                    ctx.putImageData(
-                        lineData[longestShade],
-                        Math.ceil(data.left * TIMES_BY),
-                        currentY + Math.ceil(data.top * TIMES_BY),
-                        0, 0,
-                        Math.ceil(TIMES_BY * data.width),
-                        amountThisTime
-                    );
-                    currentY += amountThisTime;
-                    amountToGo -= amountThisTime;
-                }
-                //alert("BREAK "+longestShade);
-
-                for (var i = 0; i < rleData.length; i++) {
-                    var j = rleData.charCodeAt(i);
-                    if (j >= SINGLE_VALUES_FROM) {
-                        darkness = j - SINGLE_VALUES_FROM;
-                        runsFor = 1;
-                    } else {
-                        darkness = j;
-                        runsFor = rleData.charCodeAt(i + 1);
-                        i += 1;
-                    }
-                    total += runsFor;
-
-                    while ((x + runsFor) > width) {
-                        // Goes to next line
-                        var toEndOfLine = width - x;
-                        if (toEndOfLine) {
-                            if (darkness !== longestShade) {
-                                drawFor(darkness, toEndOfLine);
-                            }
-                            x += toEndOfLine;
-                        }
-                        runsFor -= toEndOfLine;
-                        y += 1;
-                        x = 0;
-                    }
-
-                    if (runsFor) {
-                        // All on same line
+                while ((x + runsFor) > width) {
+                    // Goes to next line
+                    var toEndOfLine = width - x;
+                    if (toEndOfLine) {
                         if (darkness !== longestShade) {
-                            drawFor(darkness, runsFor);
+                            drawFor(darkness, toEndOfLine);
                         }
-                        x += runsFor;
+                        x += toEndOfLine;
                     }
+                    runsFor -= toEndOfLine;
+                    y += 1;
+                    x = 0;
                 }
-            } catch (e) {
-                setMessage("MSG ERROR: " + e + " " + e.lineNumber);
-            }
 
-            setTimeout(function() {
-                sendJSON({type: 'command', command: 'readyForMore'});
-            }, 0);
+                if (runsFor) {
+                    // All on same line
+                    if (darkness !== longestShade) {
+                        drawFor(darkness, runsFor);
+                    }
+                    x += runsFor;
+                }
+            }
+        } catch (e) {
+            setMessage("MSG ERROR: " + e + " " + e.lineNumber);
         }
+
+        // Update the cursor in one batch with the other updates
+        // to prevent needing to do it separately on the eink display
+        setTimeout(function() {
+            if (cursorMoveData) {
+                cursorId++; // Invalidate the current job
+                updateCursorPosition(
+                    cursorMoveData['relative_x'] * (1 / TIMES_EVENTS_BY),
+                    cursorMoveData['relative_y'] * (1 / TIMES_EVENTS_BY)
+                );
+                cursorMoveData = null;
+            }
+        }, 0);
+
+        setTimeout(function() {
+            sendJSON({type: 'command', command: 'readyForMore'});
+        }, 0);
     }
 }
 
