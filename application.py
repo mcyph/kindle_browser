@@ -147,15 +147,15 @@ def monitor_client_queue():
 
                 elif command['command'] == 'initialFrame':
                     with ScreenStateContext.lock:
-                        to_client_queue.put({
-                            'type': 'image',
-                            'imageData': ScreenStateContext.background,
-                            'left': 0,
-                            'top': 0,
-                            'width': ScreenStateContext.screen_x,
-                            'height': ScreenStateContext.screen_y,
-                        })
-                        #ScreenStateContext.ready_for_send = True
+                        #to_client_queue.put({
+                        #    'type': 'image',
+                        #    'imageData': process_image_for_output(ScreenStateContext.background),
+                        #    'left': 0,
+                        #    'top': 0,
+                        #    'width': ScreenStateContext.screen_x,
+                        #    'height': ScreenStateContext.screen_y,
+                        #})
+                        ScreenStateContext.ready_for_send = True
 
                 elif command['command'] == 'readyForMore':
                     print('ready for more sent:', ScreenStateContext.dirty_rect)
